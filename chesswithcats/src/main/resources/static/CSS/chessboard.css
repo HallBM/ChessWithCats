@@ -1,0 +1,187 @@
+
+body{
+    padding:0;
+    margin:0;
+    background-color:rgb(119, 119, 119);
+    font-family: 'Roboto', sans-serif;
+    height: 100vh;
+    overflow:hidden;
+}
+
+.info-panel{
+    width: 30vw;
+    height: 100vh;
+    margin-left: 2vh;
+    border-left: 2px solid rgb(43, 43, 43);
+    margin-top: -2vh;
+    margin-bottom: -2vh;
+    margin-right: -2vh;
+    box-shadow: -1vh 0vh 1vh rgb(43, 43, 43);
+    background-color: #b1400bb1;
+}
+
+.info-panel > div{
+    border: 1px solid rgb(43, 43, 43);
+    border-radius: 5px;
+    margin: 2.1vh;
+    background-color:#b59f93;
+}
+
+.top{
+    font-size: 2.5vw;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 8vh;
+}
+
+.top a{
+    margin-bottom: -1vh;
+    margin-left: 2vw;
+}
+
+a img {
+    height: 4vh;
+    aspect-ratio:1/1;
+    max-height: 40px;
+}
+
+#game-number{
+    margin-left: 2vw;
+}
+
+#turn{
+    height: 8vh;
+    color: rgb(230, 230, 230);
+    display: flex;
+    align-items: center;
+    
+    font-weight: bold;
+    justify-content: flex-start;
+}
+
+#turn-text{
+    margin-left: 2vw;
+    font-size: 2.3vw;
+}
+
+#turn-color{
+    height: 40%;
+    aspect-ratio: 1/1;
+    border: 1px solid black;
+    background-color: white;
+    border-radius: 5px;
+    margin: 0 0 0 2.3vw;
+}
+
+.timers{
+    height: 16vh;
+}
+
+.move-history{
+    height: 32vh;
+}
+
+.captured-pieces{
+    height: 22vh;
+}
+
+.background{
+    padding: 2vh;
+    margin: 0;
+    max-width: 100%;
+    height: 100%;
+    background-color:#3988c25c;
+    display: flex;
+}
+
+.gameboard{
+    display:flex;
+    justify-content: center;
+    align-items: start;
+    width: 80%;
+    max-height: 96vw;
+    max-width: 70vw;
+    height: 100%;
+    border: 0;
+    float: left;
+}
+
+#chessboard{
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    max-height: 96vw;
+    max-width: 96vh;
+    aspect-ratio: 1/1;
+    box-shadow: 1vh 1vh 1vh rgb(33, 33, 33);
+}
+
+#A8{
+    border-top-left-radius: 5px;
+}
+#A1{
+    border-bottom-left-radius: 5px;
+}
+#H8{
+    border-top-right-radius: 5px;
+}
+#H1{
+    border-bottom-right-radius: 5px;
+}
+
+
+.square {
+    width: 12.5%;
+    height: 12.5%;
+    margin: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    position: relative;
+    
+}
+
+.square div{
+    font-family: sans-serif;
+}
+
+.dark {
+    background-color: rgb(76, 76, 76);
+    color: #f9f9f9;
+ 
+}
+
+.light{
+    background-color: #f9f9f9;
+    color: rgb(43, 43, 43);
+}
+
+.number-label{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.letter-label{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.black[draggable ="true"]{
+    cursor: grab;
+}
+
+.white[draggable ="true"]{
+    cursor: grab;
+}
+
+.drag-over{
+    background-color: rgb(239, 208, 1, 0.2);
+}
+
+
+
+
