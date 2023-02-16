@@ -8,7 +8,7 @@ function getGameId(){
 
 function getPieceImgPath(gameId){
     let piecePath = [];
-    if (gameId === "game1"){
+    if (gameId === "game1" || gameId === "game0"){
         piecePath.push("../static/Images/RegChessPieces/");
         piecePath.push(".png")
     } else {
@@ -239,7 +239,9 @@ function addObstructiveCats(){
 
 function finalizeBoard(){
 
-    if (gameId === "game1"){
+    if (gameId === "game0"){
+        window.alert(`A classic game of chess`);
+    } else if (gameId === "game1"){
         addObstructiveCats();
         window.alert(`
         Game Rules:\n
@@ -273,16 +275,22 @@ function finalizeBoard(){
     }
 }
 
-let gameId = getGameId();
-getPieceImgPath(gameId);
-addPiecesWithFeatures(getPieceMap(), getPieceImgPath(gameId)); 
-
 const white = document.querySelectorAll('.white');
 const black = document.querySelectorAll('.black');
 const pieces = document.querySelectorAll('.piece');
 const squares = document.querySelectorAll('.square');
-let prevSq = "A1";
-let whiteTurn = true;
+let gameId, prevSq, whiteTurn;
 
-addSquareListeners(squares);
-finalizeBoard();
+function getNewGame(){
+    gameId = getGameId();
+    getPieceImgPath(gameId);
+    addPiecesWithFeatures(getPieceMap(), getPieceImgPath(gameId)); 
+
+    prevSq = "A1";
+    whiteTurn = true;
+
+    addSquareListeners(squares);
+    finalizeBoard();
+}
+
+getNewGame();
