@@ -244,7 +244,7 @@ input[type=radio]:checked + img{
     display: inline-block;
 }
 
-#games{
+#game{
     width: 30vw;
 
 } 

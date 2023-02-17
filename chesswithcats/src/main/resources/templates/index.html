@@ -84,18 +84,19 @@
 
     <section> 
      <div id="game-menu">
-        <form id="new-game" action="./chessboard.html" method="">
+        <form id="new-game" th:action="@{./waitingroom.html}" method="post">
           <h2 style="text-align: center">Select New Game</h2>
           <div class="newgameselection">
-          <select id="games" name="games" class="form-control">
-            <option value="game1" selected>Chess With Cats (Kitty Obstructions)</option>
-            <option value="game2">Cat Chess (Ambigious Kitty Pieces)</option>
+          <select id="game" name="game" class="form-control">
+            <option value="game1" selected>Chess With Cats (Obstructive Kitties)</option>
+            <option value="game2">Cat Chess (Ambiguous Kitties)</option>
             <option value="game3">Ultimate Cat Chess (Defiant Kitties)</option>
             <option value="game0">Classic Chess (Kitty-less Chess)</option>
           </select>
           <select id="opponent" name="opponent" class="form-control">
-            <option value="random" selected>Self</option>
-            <option value="friend1">Random Opponent</option>
+            <option value="0" selected>Self</option>
+            <option value="1">Computer</option>
+            <option value="2">Random Opponent</option>
             <option value="friend2">Friend1</option>
             <option value="friend3">Friend2</option>
           </select>

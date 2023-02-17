@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="../static/CSS/general.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  
+  <title>Chess With Cats!</title>
+</head>
+
+<body>
+    <h1>Game Request Created</h1><br>
+    <h2>Awaiting for player</h2><br>
+    <h3>Game Details:</h3><br>
+    <h3>Game Play: </h3><h3 th:text="${gameType}"></h3><br>
+    <h3>Opponent: </h3><h3 th:text="${username}"></h3><br>
+    <br>
+    <button type="submit" class="btn btn-primary btn-block" onclick="window.location.href='./index.html';">Return to Main Page</button>
+    <a href="./index.html"></a>
+    
+
+</body>
+<footer>
+
+</footer>
+</html>
