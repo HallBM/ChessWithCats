@@ -211,7 +211,7 @@ input[type=radio]:checked + img{
 }
 
 
-.new-game{
+#game-menu{
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -228,9 +228,32 @@ input[type=radio]:checked + img{
 }  
 
 #selected-game{
-    width: 20vw; 
+    width: 10vw; 
     margin: 2vh 0;
     justify-content: center;
 
+}
+
+.newgameselection{
+    flex-wrap: nowrap;
+    justify-content: space-evenly;
+}
+
+#new-game{
+    width: 100%;
+    display: inline-block;
+}
+
+#games{
+    width: 30vw;
+
+} 
+
+#opponent{
+    width: 20vw;
+}
+
+.form-control{
+    display:inline-block;
 }
 

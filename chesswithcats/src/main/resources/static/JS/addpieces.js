@@ -240,38 +240,13 @@ function addObstructiveCats(){
 function finalizeBoard(){
 
     if (gameId === "game0"){
-        window.alert(`A classic game of chess`);
+
     } else if (gameId === "game1"){
-        addObstructiveCats();
-        window.alert(`
-        Game Rules:\n
-        Play the classic game of chess, but with cats obstructing\n
-        some of the squares!\n
-        Cats cannot be moved and pieces cannot land on the cats.\n
-        *** Pawns can jump over cats ***
-        `);
+        addObstructiveCats();;
     } else if (gameId === "game2"){
-        window.alert(`
-            Game Rules:\n
-            Play the classic game of chess with cat pieces!\n
-            These cats may all look the same, but they move\n
-            according to the rules of chess based on starting position.\n
-            *** Good luck keeping track of the pieces! ***
-        `);
+    
     } else {
-        addObstructiveCats();
-        window.alert(`
-        *** GAME COMING SOON ***\n
-        Intended game play is to have chess pieces\n
-        look like cats (full set of chess pieces, non-identical)\n
-        and to have a random chance (25%) of the pieces moving\n
-        to an adjacent square when being placed during a move.\n
-        *** These cats sure are difficult to control! ***
-        \n
-        For now, enjoy a game combining the rules of the other\n
-        two games - cat pieces that all look the same, and\n
-        with other cats obstructing playable moves.
-        `);
+    
     }
 }
 

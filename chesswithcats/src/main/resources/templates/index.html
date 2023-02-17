@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
   <meta charset="UTF-8">
@@ -83,16 +83,24 @@
 
 
     <section> 
-     <div class="new-game" id="game-menu">
-        <form action="./chessboard.html" method="">
+     <div id="game-menu">
+        <form id="new-game" action="./chessboard.html" method="">
           <h2 style="text-align: center">Select New Game</h2>
-          <select id="games" name="games" class="form-control w-100">
+          <div class="newgameselection">
+          <select id="games" name="games" class="form-control">
             <option value="game1" selected>Chess With Cats (Kitty Obstructions)</option>
             <option value="game2">Cat Chess (Ambigious Kitty Pieces)</option>
             <option value="game3">Ultimate Cat Chess (Defiant Kitties)</option>
             <option value="game0">Classic Chess (Kitty-less Chess)</option>
           </select>
-          <input id="selected-game" type="submit" value="START" class="btn btn-primary">
+          <select id="opponent" name="opponent" class="form-control">
+            <option value="random" selected>Self</option>
+            <option value="friend1">Random Opponent</option>
+            <option value="friend2">Friend1</option>
+            <option value="friend3">Friend2</option>
+          </select>
+          <input id="submit" type="submit" value="START" class="btn btn-primary">
+          </div>
         </form>
       </div>
 
