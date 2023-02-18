@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="../static/CSS/general.css">
+    <link rel="stylesheet" type="text/css" href="CSS/general.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
@@ -36,10 +36,10 @@
         <span>Chess With Cats!</span>  
         <nav>
           <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="index.html#game-menu">New Game</a></li>
-            <li><a>Leader Board</a></li>
-            <li><a href="login.html">Login</a></li>
+            <li><a th:href="@{/}">Home</a></li>
+            <li><a th:href="@{/}">New Game</a></li>
+            <li><a th:href="@{/leaderboard}">Leader Board</a></li>
+            <li><a th:href="@{/login}">Login</a></li>
           </ul>
         </nav>
       </header>  
@@ -171,8 +171,8 @@
   <footer style="margin-top: 5vh;">
     <nav>
       <ul>
-        <li><a href="underconstruction.html">About</a></li>
-        <li><a href="underconstruction.html">Contact</a></li>
+        <li><a th:href="@{/about}">About</a></li>
+        <li><a th:href="@{/contact}">Contact</a></li>
       </ul>
     </nav>
   </footer>

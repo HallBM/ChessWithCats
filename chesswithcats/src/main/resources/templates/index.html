@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="../static/CSS/general.css">
+  <link rel="stylesheet" type="text/css" href="CSS/general.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
@@ -18,17 +18,17 @@
     <span>Chess With Cats!</span>
     <nav>
       <ul>
-        <li><a>Home</a></li>
+        <li><a th:href="@{/}">Home</a></li>
         <li><a href="#game-menu">New Game</a></li>
-        <li><a href="leaderboard.html">Leader Board</a></li>
-        <li><a href="login.html">Login</a></li>
+        <li><a th:href="@{/leaderboard}">Leader Board</a></li>
+        <li><a th:href="@{/login}">Login</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
     <section class="intro">
-      <img id="landing-img" src="../static/Images/large_img_catsplayingchess/rick-j-brown-OlyjFqrtPGo-unsplash.jpg">
+      <img id="landing-img" src="Images/large_img_catsplayingchess/rick-j-brown-OlyjFqrtPGo-unsplash.jpg">
       <p>In the land of Felinia, cats and chess had a long and storied history. For generations, these cats had observed
         the game of chess, fascinated by the strategic movements of the pieces. They had always longed to be a part of
         the game, but had never been given the chance. That all changed one fateful day, when a group of cunning cats
@@ -46,7 +46,7 @@
     <section class="game-list">
       <article>
 
-        <img src="../static/Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.42.png">
+        <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.42.png">
         <h2>Classic Chess</h2>
         <p>
           A classic game of chess without cats... how sad!
@@ -54,7 +54,7 @@
       </article>
       <article>
 
-        <img src="../static/Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.36.png">
+        <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.36.png">
         <h2>Chess with Cats</h2>
         <p>
           Cats have taken over your chess board. They just want to play and be a part of the game. Play chess around
@@ -63,7 +63,7 @@
       </article>
       <article>
 
-        <img src="../static/Images/large_img_catsplayingchess/DALL·E 2023-02-07 17.09.54.png" />
+        <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-07 17.09.54.png" />
         <h2>Cat Chess</h2>
         <p>
           The chess pieces are cats. But let's be honest - cats all look the same. Play chess while trying to keep track
@@ -72,7 +72,7 @@
       </article>
       <article>
 
-        <img src="../static/Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.14.png">
+        <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.14.png">
         <h2>Ultimate Cat Chess</h2>
         <p>
           Cats never like being told what to do. Play cat chess with determined and stubborn felines that may stay where
@@ -84,7 +84,7 @@
 
     <section> 
      <div id="game-menu">
-        <form id="new-game" th:action="@{./waitingroom.html}" method="post">
+        <form id="new-game" th:action="@{/gamerequest}" method="post">
           <h2 style="text-align: center">Select New Game</h2>
           <div class="newgameselection">
           <select id="game" name="game" class="form-control">
@@ -112,8 +112,9 @@
   <footer>
     <nav>
       <ul>
-        <li><a href="underconstruction.html">About</a></li>
-        <li><a href="underconstruction.html">Contact</a></li>
+        <li><a th:href="@{/about}">About</a></li>
+        <li><a th:href="@{/contact}">Contact</a></li>
+        <li><a th:href="@{/profile}">Edit Profile</a></li>
       </ul>
     </nav>
   </footer>
