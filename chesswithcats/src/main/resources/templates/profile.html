@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="CSS/general.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <title>Login</title>
+</head>
+
+<body>
+  <header>
+    <span>Chess With Cats!</span>
+    <nav>
+      <ul>
+        <li><a>Home</a></li>
+        <li><a href="#game-menu">New Game</a></li>
+        <li><a th:href="@{/leaderboard}">Leader Board</a></li>
+        <li><a th:href="@{/login}">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+<h1>Player Profile</h1>
+<div>Icon</div>
+<div>Username</div>
+<div>DOB</div>
+<div>First Name</div>
+<div>Last Name</div>
+<div>Email</div>
+<div>Date Joined</div>
+<div>Membership (days)</div>
+<button type="submit" class="btn btn-primary btn-block" onclick="window.location.href='/index.html';">Edit Profile</button>
+<div></div>
+<h1>Friends List</h1>
+<div>friends list</div>
+<div></div>
+<h1>Blocked List</h1>
+<div>blocked list</div>
+<div></div>
+<h1>Active games</h1>
+<div>Unfinished games</div>
+<div></div>
+<h1>Completed games</h1>
+<div>20 most recent games [with replay button to re-submit request]</div>
+</body>
+</html>
