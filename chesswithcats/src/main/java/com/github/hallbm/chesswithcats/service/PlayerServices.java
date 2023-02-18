@@ -5,7 +5,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.github.hallbm.chesswithcats.DTO.PlayerRegistrationDTO;
+import com.github.hallbm.chesswithcats.dto.PlayerRegistrationDTO;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 

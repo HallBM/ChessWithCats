@@ -1,4 +1,4 @@
-package com.github.hallbm.chesswithcats.DTO;
+package com.github.hallbm.chesswithcats.dto;
 
 
 
