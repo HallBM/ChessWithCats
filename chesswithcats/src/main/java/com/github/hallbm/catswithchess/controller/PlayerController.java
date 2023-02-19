@@ -29,6 +29,12 @@ public class PlayerController {
 		return "login";
 	}
 	
+	@GetMapping("/successfulRegistration")
+	public String loginAfterRegistration(Model model) {
+		model.addAttribute("successReg", true);
+		return "login";
+	}
+	
 	@PostMapping("/validateLogin")
 	public String validateLogin(Model model, Player player) {
 
@@ -59,35 +65,31 @@ public class PlayerController {
 	@PostMapping("/registerPlayer")
     public String registerPlayer(@Valid @ModelAttribute("playerReg") PlayerRegistrationDTO playerReg, BindingResult result, Model model) {
    	
-		Player existingEmail = playerRepo.findByEmail(playerReg.getEmail());
-		Player existingUsername = playerRepo.findByUsername(playerReg.getUsername());
+		String existingEmail = playerRepo.findEmail(playerReg.getEmail());
+		String existingUsername = playerRepo.findUsername(playerReg.getUsername());
 
 		if (existingEmail != null){
-	        //TODO suggest login instead   
-			result.rejectValue("email", null, "There is already an account registered with that email");
-	    }
-		
-		if (existingUsername != null) {
-			result.rejectValue("username", playerReg.getUsername(), "Username already exists");
-		}
-		
-		if (!playerReg.getPassword().equals(playerReg.getConfirmedPassword())) {
-			//TODO currently handled by JS internal script
-			result.rejectValue("password", null, "Passwords do not match");
-			result.rejectValue("password-confirm", null, "Passwords do not match");
-		} 
-			
-		if (result.hasErrors()){
-	        model.addAttribute("playerReg", playerReg);
+			result.rejectValue("email", null);
 			return "register";
 	    }
 		
-		System.out.println(playerReg.getUsername());
+		if (existingUsername != null) {
+			result.rejectValue("username", null);
+			return "register";
+		}
 		
-		playerServ.registerPlayer(playerReg);
+		if (!playerReg.getPassword().equals(playerReg.getConfirmedPassword())) {
+			result.rejectValue("password", null);
+			return "register";
+		} 
 		
-		//TODO display successful registration
-        return "redirect:/login";
+	    if (result.hasErrors()){
+	        return "register";
+	    }
+		
+	    playerServ.registerPlayer(playerReg);
+		
+        return "redirect:/successfulRegistration";
 	}
 
 }
