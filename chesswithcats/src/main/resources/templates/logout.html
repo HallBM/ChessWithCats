@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/CSS/general.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <title>Login</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row d-flex justify-content-center">
+            <div class="col-4 login">
+                    
+                        <div class="form-row d-flex justify-content-center">
+                            <div class="col-10 form-group">
+                               <h2>LOGOUT</h2>
+                               </div>    
+                        </div>
+                        <form th:action="@{/logout}" method="post">
+                        <div class="form-row d-flex justify-content-center">
+                         
+                        <div class="col-10">
+                            <p>Are you sure?</p>
+                            <button type="submit" class="btn btn-primary btn-block">LOGOUT</button>
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-center">
+                        
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="CSS/general.css">
+    <link rel="stylesheet" type="text/css" href="/CSS/general.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
@@ -16,27 +16,29 @@
     <div class="container">
         <div class="row d-flex justify-content-center">
             <div class="col-4 login">
-                    <form action="" method="post">
+                    
                         <div class="form-row d-flex justify-content-center">
                             <div class="col-10 form-group">
                                <h2>LOGIN</h2>
                                <p class="alert alert-success" th:if="${successReg}">Registration Successful!</p>
                             </div>    
                         </div>
+                        <form th:action="@{/login-player}" th:object="${userLogin}" method="post">
                         <div class="form-row d-flex justify-content-center">
                          <div class="col-10 form-group">
-                            <label>Username or email</label>
-                            <input type="text" class="form-control" required>
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" class="form-control" th:field="*{username}" required>
                         </div>
                     </div>    
                     <div class="form-row d-flex justify-content-center">
                         <div class="col-10 form-group">
-                            <label>Password</label>
-                            <input type="password" class="form-control" required>
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" th:field="*{password}" required>
                         </div>
                     </div>
                     <div class="form-row d-flex justify-content-center">
                         <div class="col-10">
+                            <p class="alert alert-danger" th:if="${loginFail}">Invalid username or password</p>
                             <p></p>
                             <button type="submit" class="btn btn-primary btn-block">LOGIN</button>
                         </div>

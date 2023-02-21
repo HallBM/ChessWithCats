@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
 <head>
   <meta charset="UTF-8">
@@ -27,6 +27,10 @@
   </header>
 
   <main>
+<div sec:authorize="isAuthenticated()">
+    <h1 style="color: red;">SUCCESSFUL LOGIN AND AUTHENTICATION!!!!! WELCOME <span th:text="${username}">User</span>!</h1>
+    </div>
+
     <section class="intro">
       <img id="landing-img" src="Images/large_img_catsplayingchess/rick-j-brown-OlyjFqrtPGo-unsplash.jpg">
       <p>In the land of Felinia, cats and chess had a long and storied history. For generations, these cats had observed
@@ -115,6 +119,7 @@
         <li><a th:href="@{/about}">About</a></li>
         <li><a th:href="@{/contact}">Contact</a></li>
         <li><a th:href="@{/profile}">Edit Profile</a></li>
+        <li><a th:href="@{/logout}">Logout</a></li>
       </ul>
     </nav>
   </footer>

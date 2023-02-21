@@ -1,13 +1,15 @@
 package com.github.hallbm.chesswithcats.model;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.NaturalId;
+import org.springframework.security.core.userdetails.UserDetails;
 
-
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,8 +35,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "players")
-public class Player {
+public class Player implements UserDetails {
 	
+	private static final long serialVersionUID = -2076473928351138338L;
+
 	@Id
 	@Column(updatable = false, nullable = false)
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -71,7 +75,7 @@ public class Player {
 	@Column(updatable = false)
 	@NotNull
 	@Temporal(TemporalType.DATE)
-	private Date dateJoined;
+	private Date dateJoined = new Date();
 	
 	@ColumnDefault("500")
 	@NotNull
@@ -79,23 +83,44 @@ public class Player {
 	
 	@Column
 	@NotNull
-	private boolean isLoggedIn;
+	private boolean isLoggedIn = false;
 	
 	@Column
 	@NotNull
-	private boolean isPlaying;
+	private boolean isPlaying = false;
 	
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Player> friends = new HashSet<>();
 	
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Player> blocked = new HashSet<>();
+	
+	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	private Collection<Authority> authorities;
+	
+	@Column
+	private boolean isAccountNonExpired = true;
+	
+	@Column
+	private boolean isAccountNonLocked = true;
+	
+	@Column
+	private boolean isCredentialsNonExpired = true;
+	
+	@Column
+	private boolean isEnabled = true;
+	
 	
 	//TODO: Fill out later when other classes are created
 	
 	//private Set<Game> playedGames; 
 	//@OneToMany 
 	//private Set<GameRequest> gameRequests;
+	
+	
+	
+
+	
 	
 	
 	
