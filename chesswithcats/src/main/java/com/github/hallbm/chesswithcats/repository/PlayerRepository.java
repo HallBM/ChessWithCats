@@ -10,8 +10,8 @@ import com.github.hallbm.chesswithcats.model.Player;
 
 //@Repository
 public interface PlayerRepository extends JpaRepository<Player, Long> {
-    public Optional<Player> findByUsername(String username);
-    public Optional<Player> findByEmail(String email);
+    public Player findByUsername(String username);
+    public Player findByEmail(String email);
     
     @Query("SELECT player.username FROM Player player where player.username =:username")
     public Optional<String> findUsername(@Param("username") String username);

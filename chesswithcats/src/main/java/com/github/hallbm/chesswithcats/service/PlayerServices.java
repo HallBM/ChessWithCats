@@ -1,6 +1,8 @@
 package com.github.hallbm.chesswithcats.service;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.github.hallbm.chesswithcats.dto.PlayerRegistrationDTO;
+import com.github.hallbm.chesswithcats.enums.GameStyles;
 import com.github.hallbm.chesswithcats.model.Authority;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.AuthorityRepository;
@@ -41,6 +44,14 @@ public class PlayerServices implements UserDetailsService{
 		player.setIconFile(playerReg.getIconFile());
 		player.setEmail(playerReg.getEmail());
 		player.setAuthorities(Collections.singletonList(authRepo.findByAuthority("ROLE_USER").orElse(createUserRole("ROLE_USER"))));
+
+		Map<String, Integer> points = new HashMap<> ();
+		for(GameStyles gs : GameStyles.values()) {
+			points.put(gs.toString(), 500);
+		}
+		
+		player.setPoints(points);
+		
 		return playerRepo.save(player);
 	}
 	
@@ -54,7 +65,7 @@ public class PlayerServices implements UserDetailsService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDetails player = playerRepo.findByUsername(username).orElse(null);
+        UserDetails player = playerRepo.findByUsername(username);
         if (player == null) {
             throw new UsernameNotFoundException("user not found with the corresponding email");
         }

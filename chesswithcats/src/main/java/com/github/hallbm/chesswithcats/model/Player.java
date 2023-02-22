@@ -3,20 +3,26 @@ package com.github.hallbm.chesswithcats.model;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.NaturalId;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.github.hallbm.chesswithcats.enums.GameStyles;
+
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -40,7 +46,7 @@ public class Player implements UserDetails {
 	private static final long serialVersionUID = -2076473928351138338L;
 
 	@Id
-	@Column(updatable = false, nullable = false)
+	@Column(name = "player_id", updatable = false, nullable = false)
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private Long playerId;
 	
@@ -77,9 +83,13 @@ public class Player implements UserDetails {
 	@Temporal(TemporalType.DATE)
 	private Date dateJoined = new Date();
 	
-	@ColumnDefault("500")
+    @ElementCollection
+    @CollectionTable(name = "scores", 
+      joinColumns = {@JoinColumn(name = "player_id", referencedColumnName = "player_id")})
+    @MapKeyColumn(name = "game_style")
+    @Column(name = "points")
 	@NotNull
-	private Integer points = 500;
+	private Map<String, Integer> points; 
 	
 	@Column
 	@NotNull
@@ -91,6 +101,9 @@ public class Player implements UserDetails {
 	
 	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Player> friends = new HashSet<>();
+
+	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private Set<Player> unfriended = new HashSet<>();
 	
 	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Player> blocked = new HashSet<>();
