@@ -21,8 +21,8 @@
 		<div class="row d-flex justify-content-center">
 			<div class="col-8 login">
 
-				<form th:action="@{/register}" th:object="${playerReg}"
-					method="post">
+				<form th:action="@{/register}" th:object="${playerReg}"	method="post">
+				
 					<div class="form-row d-flex justify-content-center">
 						<div class="col-10 form-group">
 							<h2 style="margin-left: -1.5vw">SIGN UP</h2>
@@ -33,9 +33,11 @@
 						<div class="col-5 form-group">
 							<label for="username">Username</label> 
 							<input type="text"
-								id="username" name="username" class="form-control"
+								id="username" name="username" class="form-control username"
 								th:field="*{username}" required>
+
 							<p class="alert alert-danger" th:if="${#fields.hasErrors('username')}">Username already exists</p>
+							<p class="alert alert-danger" id="msg" style="display:none">Username already exists</p>
 						</div>
 						<div class="space"></div>
 						<div class="col-5 form-group">
@@ -145,6 +147,8 @@
 		</div>
 	</div>
 
+	<script src="JS/usernameAJAX.js"></script>
+	
 </body>
 
 </html>
