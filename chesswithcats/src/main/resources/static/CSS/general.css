@@ -53,9 +53,18 @@ footer{
     font-size: 1.2vw;
 }
 
-nav ul, span {
-    list-style: none;
+span{
+	list-style: none;
     font-size: 2.5vw;
+    font-weight: bolder;
+    text-align: right;
+    margin: 0;
+    color: #EDEFEE;
+}
+
+nav ul {
+    list-style: none;
+    font-size: 1.5vw;
     font-weight: bolder;
     text-align: right;
     margin: 0;

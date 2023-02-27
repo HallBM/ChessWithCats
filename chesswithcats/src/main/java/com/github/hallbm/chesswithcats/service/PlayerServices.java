@@ -1,21 +1,14 @@
 package com.github.hallbm.chesswithcats.service;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.github.hallbm.chesswithcats.dto.PlayerRegistrationDTO;
-import com.github.hallbm.chesswithcats.enums.GameStyles;
 import com.github.hallbm.chesswithcats.model.Authority;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.AuthorityRepository;
@@ -45,13 +38,6 @@ public class PlayerServices implements UserDetailsService{
 		player.setEmail(playerReg.getEmail());
 		player.setAuthorities(Collections.singletonList(authRepo.findByAuthority("ROLE_USER").orElse(createUserRole("ROLE_USER"))));
 
-		Map<String, Integer> points = new HashMap<> ();
-		for(GameStyles gs : GameStyles.values()) {
-			points.put(gs.toString(), 500);
-		}
-		
-		player.setPoints(points);
-		
 		return playerRepo.save(player);
 	}
 	
@@ -63,15 +49,14 @@ public class PlayerServices implements UserDetailsService{
 		return auth;
 	}
 
+
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDetails player = playerRepo.findByUsername(username);
+    public Player loadUserByUsername(String username) throws UsernameNotFoundException {
+        Player player = playerRepo.findByUsername(username);
         if (player == null) {
             throw new UsernameNotFoundException("user not found with the corresponding email");
         }
-        return new User(player.getUsername(), player.getPassword(), player.getAuthorities().stream()
-        				.map((authorities) -> new SimpleGrantedAuthority(authorities.getAuthority())).collect(Collectors.toList()));
-	
+        return player;	
     }
 
 }

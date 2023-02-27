@@ -1,5 +1,6 @@
 package com.github.hallbm.chesswithcats.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,14 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 import com.github.hallbm.chesswithcats.model.Player;
 
-//@Repository
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     public Player findByUsername(String username);
     public Player findByEmail(String email);
+
+    @Query("SELECT p.username FROM Player p WHERE p.username LIKE :search ORDER BY p.username ASC LIMIT 50")
+    public Optional<List<String>> searchTenNewFriends(@Param("search") String search); 
     
-    @Query("SELECT player.username FROM Player player where player.username =:username")
-    public Optional<String> findUsername(@Param("username") String username);
+    public boolean existsByUsername(String username);
     
-    @Query("SELECT player.email FROM Player player where player.email =:email")
-    public Optional<String> findEmail(@Param("email") String email);
 }

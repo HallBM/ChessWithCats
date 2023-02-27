@@ -17,10 +17,16 @@
   <header>
     <span>Chess With Cats!</span>
     <nav>
-      <ul>
+      <ul sec:authorize="isAuthenticated()">
         <li><a th:href="@{/}">Home</a></li>
         <li><a href="#game-menu">New Game</a></li>
         <li><a th:href="@{/leaderboard}">Leader Board</a></li>
+        <li><a th:href="@{/friends}">Friends</a></li>
+        <li><a th:href="@{/games}">Games</a></li>
+        <li><a th:href="@{/profile}">Profile</a></li>
+        <li><a th:href="@{/logout}">Logout</a></li>
+       </ul>
+       <ul sec:authorize="!isAuthenticated()"> 
         <li><a th:href="@{/login}">Login</a></li>
       </ul>
     </nav>
@@ -87,7 +93,7 @@
 
 
     <section> 
-     <div id="game-menu">
+     <div id="game-menu" sec:authorize="isAuthenticated()">
         <form id="new-game" th:action="@{/gamerequest}" method="post">
           <h2 style="text-align: center">Select New Game</h2>
           <div class="newgameselection">
@@ -118,8 +124,6 @@
       <ul>
         <li><a th:href="@{/about}">About</a></li>
         <li><a th:href="@{/contact}">Contact</a></li>
-        <li><a th:href="@{/profile}">Edit Profile</a></li>
-        <li><a th:href="@{/logout}">Logout</a></li>
       </ul>
     </nav>
   </footer>

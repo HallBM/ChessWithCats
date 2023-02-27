@@ -5,42 +5,125 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="CSS/general.css">
+    <link rel="stylesheet" type="text/css" th:href="@{/CSS/general.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <title>Login</title>
+    <title>Player Profile</title>
 </head>
 
 <body>
   <header>
     <span>Chess With Cats!</span>
     <nav>
-      <ul>
+      <ul sec:authorize="isAuthenticated()">
         <li><a th:href="@{/}">Home</a></li>
-        <li><a th:href="@{/}">New Game</a></li>
+        <li><a href="#game-menu">New Game</a></li>
         <li><a th:href="@{/leaderboard}">Leader Board</a></li>
+        <li><a th:href="@{/friends}">Friends</a></li>
+        <li><a th:href="@{/games}">Games</a></li>
+        <li><a th:href="@{/profile}">Profile</a></li>
+        <li><a th:href="@{/logout}">Logout</a></li>
+       </ul>
+       <ul sec:authorize="!isAuthenticated()"> 
         <li><a th:href="@{/login}">Login</a></li>
       </ul>
     </nav>
   </header>
-<h1>Player Profile</h1>
-<div>Icon</div>
-<div>Username</div>
-<div>DOB</div>
-<div>First Name</div>
-<div>Last Name</div>
-<div>Email</div>
-<div>Date Joined</div>
-<div>Membership (days)</div>
-<button type="submit" class="btn btn-primary btn-block" onclick="window.location.href='/index.html';">Edit Profile</button>
-<div></div>
+<div>
+<h1>User Profile</h1>
+<button th:if="${isEditable}" type="submit" class="btn btn-primary btn-block">Edit profile</button>
+
+<img style="width: 10vw" th:src="@{'/Images/large_img_catsplayingchess/' + ${iconFile}}">
+    <p><strong>Username:</strong> <span th:text="${username}"></span></p>
+    <p th:if="${password} != null"><strong>Password:</strong> <span th:text="${password}"></span></p> 
+    <p th:if="${password} != null"><strong>Email:</strong> <span th:text="${email}"></span></p> 
+    <p th:if="${password} != null"><strong>Full Name:</strong> <span th:text="${name}"></span></p>
+ 	<p><strong>Member since:</strong> <span th:text="${dateJoined} + ${accountDays}"></span></p>
+</div>	
+<div>
+<h1>Game Outcomes</h1>	
+	
+ <table class="table table-striped">
+ <thead>
+    <tr>
+        <th>Games Played</th>
+        <th>Wins</th>
+        <th>Draws</th>
+        <th>Losses</th>
+    </tr>
+ </thead>
+    
+<!-- For each game, set row label and fill player information for above th 
+     <tbody>
+     <tr th:each="friend : ${friendList}">
+      <td><img style="width: 2vw" th:src="@{'Images/large_img_catsplayingchess/' + ${friend.iconFile}}"><span th:text="${friend.username}"></span></td>
+      <td th:text="${friend.gamesPlayed}"></td>
+      <td th:text="${friend.gamesWin}"></td>
+      <td th:text="${friend.gamesDraw}"></td>
+      <td th:text="${friend.gamesLoss}"></td>
+      <td th:text="PATCH REQ BUTTON UNDO"></td>
+      <td th:text="PATCH REQ BUTTON REMOVE FRIEND"></td>
+      <td th:text="PATCH REQ BUTTON BLOCK FRIEND"></td>
+     </tr>
+    </tbody>
+
+-->
+</table>
+
+
+<!-- TODO friend search -->
+<br>
+<div class="col-md-5">
 <h1>Friends List</h1>
-<div>friends list</div>
-<div></div>
+ <table class="table table-striped">
+ <thead>
+    <tr>
+        <th>Friend</th>
+        <th>Games Played</th>
+        <th>Win</th>
+        <th>Draw</th>
+        <th>Loss</th>
+        <th></th>
+        <th></th> <!-- space holder remove friend -->
+        <th></th> <!-- space holder blocked friend -->
+    </tr>
+ </thead>
+ <!--  Fill out when adding to friends list is ready    
+    <tbody>
+
+     <tr th:each="friend : ${friendList}">
+      <td><img style="width: 2vw" th:src="@{'Images/large_img_catsplayingchess/' + ${friend.iconFile}}"><span th:text="${friend.username}"></span></td>
+      <td th:text="${friend.gamesPlayed}"></td>
+      <td th:text="${friend.gamesWin}"></td>
+      <td th:text="${friend.gamesDraw}"></td>
+      <td th:text="${friend.gamesLoss}"></td>
+      <td th:text="PATCH REQ BUTTON UNDO"></td>
+      <td th:text="PATCH REQ BUTTON REMOVE FRIEND"></td>
+      <td th:text="PATCH REQ BUTTON BLOCK FRIEND"></td>
+     </tr>
+    </tbody>
+ -->
+</table>
+
+</div>
+
+
+
+<br>
+
+
+
+
+
+
 <h1>Blocked List</h1>
-<div>blocked list</div>
-<div></div>
+
+
+
+
+
+
 <h1>Active games</h1>
 <div>Unfinished games</div>
 <div></div>

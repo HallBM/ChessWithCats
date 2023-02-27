@@ -1,7 +1,7 @@
 package com.github.hallbm.chesswithcats.controller;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import java.security.Principal;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +11,7 @@ public class NavigationController {
 
 	@GetMapping("/about")
 	public String getAboutSection(Model model) {
-		return "underconstruction";
+		return "mockup";
 	}
 	
 	@GetMapping("/contact")
@@ -20,13 +20,38 @@ public class NavigationController {
 	}
 	
 	@GetMapping("/")
-	public String getHomePage(Model model) {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-			    
-		if (authentication != null && authentication.isAuthenticated()) {
-		    model.addAttribute("authenticated", true);
-		    model.addAttribute("username", authentication.getName());
+	public String getHomePage(Model model, Principal user) {
+		
+		if (user != null) {
+			model.addAttribute("username", user.getName()); 
 		}
+		
 		return "index";
-	}	
+	}
+	
+
+	
+	@GetMapping("/leaderboard")
+	public String showLeaders(Model model, Principal user) {
+		
+		if (user != null) {
+			model.addAttribute("authenticated", true);
+			model.addAttribute("username", user.getName()); 
+		}
+		
+		return "leaderboard";
+	}
+	
+
+	
+	@GetMapping("/games")
+	public String showGames(Model model, Principal user) {
+		
+		if (user != null) {
+			model.addAttribute("authenticated", true);
+			model.addAttribute("username", user.getName()); 
+		}
+		
+		return "games";
+	}
 }

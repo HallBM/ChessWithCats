@@ -18,14 +18,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "authority")
+@Table(name = "authorities")
 public class Authority implements GrantedAuthority{
 
 	private static final long serialVersionUID = 1L;
 
 	@Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+	
     @Column(nullable = false, unique = true)
     private String authority;
 
