@@ -1,13 +1,8 @@
 package com.github.hallbm.chesswithcats.controller;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,51 +23,35 @@ import com.github.hallbm.chesswithcats.model.FriendRequest.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.FriendRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
+import com.github.hallbm.chesswithcats.service.FriendServices;
 
 @Controller
-public class FriendRequestController {
+public class FriendController {
 
 	@Autowired
 	private PlayerRepository playerRepo;
 
 	@Autowired
 	private FriendRequestRepository friendReqRepo;
+	
+	@Autowired
+	private FriendServices friendServ;
 
 	@GetMapping("/friends")
 	public String showFriends(Model model, @AuthenticationPrincipal Player currentUser) {
 
-		List<FriendRequest> receivedPendingRequests = friendReqRepo.findByReceiverUsernameAndStatus(
-				currentUser.getUsername(), FriendRequest.FriendRequestStatus.PENDING);
-		Set<String> requestingPlayerUsernames = receivedPendingRequests.stream().map(FriendRequest::getSender)
-				.map(Player::getUsername).collect(Collectors.toCollection(TreeSet::new));
-		model.addAttribute("receivedList", requestingPlayerUsernames);
+		Set<String> receivedRequests = friendServ.getReceivedFriendRequestUsernames(currentUser.getUsername());
+		model.addAttribute("receivedList", receivedRequests);
 
-		List<FriendRequest> sentPendingRequests = friendReqRepo.findBySenderUsernameAndStatus(
-				currentUser.getUsername(), FriendRequest.FriendRequestStatus.PENDING);
-		Set<String> requestedPlayerUsernames = sentPendingRequests.stream().map(FriendRequest::getReceiver)
-				.map(Player::getUsername).collect(Collectors.toCollection(TreeSet::new));
-		model.addAttribute("pendingList", requestedPlayerUsernames);
-
-		List<FriendRequest> blockedFriendRequests = friendReqRepo.findBySenderUsernameAndStatusAndBlockedBy(
-				currentUser.getUsername(), FriendRequest.FriendRequestStatus.BLOCKED, BlockedBy.SENDER);
-		Set<String> blockedPlayerUsernames = blockedFriendRequests.stream().map(FriendRequest::getReceiver)
-				.map(Player::getUsername).collect(Collectors.toCollection(TreeSet::new));
-		blockedFriendRequests = friendReqRepo.findByReceiverUsernameAndStatusAndBlockedBy(
-				currentUser.getUsername(), FriendRequest.FriendRequestStatus.BLOCKED, BlockedBy.RECEIVER);
-		blockedPlayerUsernames.addAll(blockedFriendRequests.stream().map(FriendRequest::getSender)
-				.map(Player::getUsername).collect(Collectors.toSet()));
-		model.addAttribute("blockedList", blockedPlayerUsernames);
-
-		List<FriendRequest> acceptedFriendRequests = friendReqRepo.findByReceiverUsernameAndStatus(
-				currentUser.getUsername(), FriendRequest.FriendRequestStatus.ACCEPTED);
-		TreeSet<String> friendUsernames = acceptedFriendRequests.stream()
-				.map(FriendRequest::getSender).map(Player::getUsername).collect(Collectors.toCollection(TreeSet::new));
-		acceptedFriendRequests = friendReqRepo.findBySenderUsernameAndStatus(currentUser.getUsername(),
-				FriendRequest.FriendRequestStatus.ACCEPTED);
-		friendUsernames.addAll(acceptedFriendRequests.stream()
-				.map(FriendRequest::getReceiver).map(Player::getUsername).collect(Collectors.toSet()));
+		Set<String> pendingRequests = friendServ.getPendingFriendRequestUsernames(currentUser.getUsername());
+		model.addAttribute("pendingList", pendingRequests);
+		
+		Set<String> blockedUsernames = friendServ.getBlockedUsernames(currentUser.getUsername());
+		model.addAttribute("blockedList", blockedUsernames);
+		
+		Set<String> friendUsernames = friendServ.getFriendUsernames(currentUser.getUsername());
 		model.addAttribute("friendsList", friendUsernames);
-
+		
 		return "friends";
 	}
 
@@ -81,21 +60,12 @@ public class FriendRequestController {
 	public ResponseEntity<List<String>> friendSearch(@RequestParam("userInput") String userInput,
 			@AuthenticationPrincipal Player currentUser) {
 
-		List<FriendRequest> connections = friendReqRepo
-				.findByReceiverUsernameOrSenderUsername(currentUser.getUsername(), currentUser.getUsername());
-		Set<String> connectionNames = new HashSet<>(Arrays.asList(currentUser.getUsername()));
+		Set<String> connectionNames = friendServ.getAllConnectionUsernamesAndSelf(currentUser.getUsername());
 		
-		for (FriendRequest connection : connections) {
-			connectionNames.add(connection.getReceiver().getUsername());
-			connectionNames.add(connection.getSender().getUsername());
-		}
-		
-		List<String> results = new ArrayList<>();
-		results = playerRepo.searchTenNewFriends(userInput + "%").orElse(null);
-
-		results.removeAll(connectionNames);
+		List<String> results = playerRepo.searchNewFriends(userInput + "%").orElse(null);
 
 		if (!results.isEmpty()) {
+			results.removeAll(connectionNames);
 			results.subList(0, Math.min(results.size(), 10));
 		}
 
