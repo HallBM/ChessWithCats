@@ -49,7 +49,6 @@ public class PlayerServices implements UserDetailsService{
 		return auth;
 	}
 
-
     @Override
     public Player loadUserByUsername(String username) throws UsernameNotFoundException {
         Player player = playerRepo.findByUsername(username);

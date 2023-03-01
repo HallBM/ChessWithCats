@@ -1,5 +1,7 @@
 package com.github.hallbm.chesswithcats.controller;
 
+import java.util.Date;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +46,8 @@ public class UserController {
 
 	@GetMapping("/login-success")
 	public String successfulLogin(@AuthenticationPrincipal Player currentUser) {
-		currentUser.setLoggedIn(true);
+		currentUser.setLogged(true);
+		currentUser.setLastLogin(new Date());
 		playerRepo.save(currentUser);
 		return "redirect:/";
 	}

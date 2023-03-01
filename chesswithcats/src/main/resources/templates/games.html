@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" th:href="@{/CSS/general.css}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+	href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+	rel="stylesheet">
+<title>Games</title>
+</head>
+
+<body>
+	<header>
+		<span>Chess With Cats!</span>
+		<nav>
+			<ul sec:authorize="isAuthenticated()">
+				<li><a th:href="@{/}">Home</a></li>
+				<li><a href="#game-menu">New Game</a></li>
+				<li><a th:href="@{/leaderboard}">Leader Board</a></li>
+				<li><a th:href="@{/friends}">Friends</a></li>
+				<li><a th:href="@{/games}">Games</a></li>
+				<li><a th:href="@{/profile}">Profile</a></li>
+				<li><a th:href="@{/logout}">Logout</a></li>
+			</ul>
+			<ul sec:authorize="!isAuthenticated()">
+				<li><a th:href="@{/login}">Login</a></li>
+			</ul>
+		</nav>
+	</header>
+	<main style="display: block">
+
+    <section> 
+     <div id="game-menu" sec:authorize="isAuthenticated()">
+        <form id="new-game" th:action="@{/gamerequest}" th:object="${gameReq}" method="post">
+          <h2 style="text-align: center">Select New Game</h2>
+          <div class="newgameselection">
+          <select id="style" name="style" class="form-control">
+            <option th:each="style : ${gameStyles}" th:value="${style}" th:field="*{style}" th:text="${style.getDescription()}"></option>
+          </select>
+          <select id="opponent" name="opponent" class="form-control">
+            <option value="1" selected>Random Opponent</option>
+			<option th:each="opponent : ${friends}" th:value="${opponent}" th:text="${opponent}" th:field="*{opponent}"></option>
+          </select>
+          <input id="submit" type="submit" value="Submit" class="btn btn-primary">
+          </div>
+        </form>
+      </div>
+
+    </section>
+
+
+
+		<div>
+
+			<div class="col-md-5">
+				<h1>RECEIVED GAME REQUESTS</h1>
+				<table class="table table-striped"
+					th:if="${!#lists.isEmpty(receivedList)}">
+					<thead>
+						<tr>
+							<th>Created</th>
+							<th>Opponent</th>
+							<th>Game Type</th>
+							<th>Accept</th>
+							<th>Decline</th>
+						</tr>
+					</thead>
+					<tbody>
+
+						<tr th:each="request : ${receivedList}">
+					
+							<td th:text="${request.time}"></td>
+							
+							<td>
+								<a th:href="'/profile/' + ${request.opponent}" th:text="${request.opponent}"></a>
+                			</td>	
+
+							<td th:text="${request.style}"></td>
+
+							<td>
+								<form th:action="@{'/gamerequest/accept/' + ${request.id}}" method="post">
+									<button type="submit" th:value="${request.id}"
+										style="font-size: 1vw; color: green">
+										Accept <i class="fas fa-user-check" style="color: green"></i>
+									</button>
+								</form>
+							</td>
+
+							<td>
+								<form th:action="@{'/gamerequest/decline/' + ${request.id}}" method="post">
+									<button type="submit" th:value="${request.id}"
+										style="font-size: 1vw; color: black">
+										Decline <i class="fas fa-user-times" style="color: black"></i>
+									</button>
+								</form>
+							</td>
+
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="col-md-5">
+				<h1>PENDING SENT FRIEND REQUESTS</h1>
+				<table class="table table-striped"
+					th:if="${!#lists.isEmpty(pendingList)}">
+					<thead>
+						<tr>
+							<th>Created</th>
+							<th>Opponent</th>
+							<th>Game Type</th>
+							<th>Cancel</th>
+
+						</tr>
+					</thead>
+					<tbody>
+
+						<tr th:each="pendingRequest : ${pendingList}">
+					
+							<td th:text="${pendingRequest.time}"></td>
+							
+							<td>
+								<a th:href="'/profile/' + ${pendingRequest.opponent}" th:text="${pendingRequest.opponent}"></a>
+                			</td>	
+
+							<td th:text="${pendingRequest.style}"></td>
+
+							<td>
+								<form th:action="@{'/gamerequest/decline/' + ${pendingRequest.id}}" method="post">
+									<button type="submit" th:value="${pendingRequest.id}"
+										style="font-size: 1vw; color: green">
+										Cancel <i class="fas fa-user-check" style="color: green"></i>
+									</button>
+								</form>
+							</td>
+
+							<td>
+		
+
+						</tr>
+					</tbody>
+				</table>
+				
+				
+			</div>
+		</div>
+
+		<div>
+			<div class="col-md-5">
+				<h1>ACTIVE GAMES</h1>
+				<table class="table table-striped"
+					th:if="${!#lists.isEmpty(activeList)}">
+					<thead>
+						<tr>
+							<th>Game Id</th>
+							<th>Game Type</th>
+							<th>Game Color</th>
+							<th>Opponent</th>
+							<th>Turn</th>
+							<th>Forfeit</th>
+
+						</tr>
+					</thead>
+					<tbody>
+
+						<tr th:each="game : ${activeList}">
+							<td th:text="${game.gameId}"></td>
+							<td th:text="${game.style}"></td>
+							<td th:text="${game.color}"></td>
+							
+							<td>
+								<a th:href="'/profile/' + ${game.opponent}" th:text="${game.opponent}"></a>
+                			</td>	
+						
+							<td th:text="${game.turn}"></td>
+
+							<td>
+								<form th:action="@{'/game/forfiet/' + ${game.gameId}}" method="post">
+									<button type="submit" th:value="${game.gameId}"
+										style="font-size: 1vw; color: green">
+										Forfeit <i class="fas fa-user-check" style="color: green"></i>
+									</button>
+								</form>
+							</td>
+
+							<td>
+		
+
+						</tr>
+					</tbody>
+				</table>
+				</div>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+		<div class="col-md-5">		
+				<h1>COMPLETED GAMES</h1>
+				<table class="table table-striped"
+					th:if="${!#lists.isEmpty(archiveList)}">
+					<thead>
+						<tr>
+							<th>Game Id</th>
+							<th>Game Type</th>
+							<th>Game Color</th>
+							<th>Opponent</th>
+							<th>Game Outcome</th>
+						</tr>
+					</thead>
+					<tbody>
+
+						<tr th:each="game : ${archiveList}">
+							<td th:text="${game.gameId}"></td>
+							<td th:text="${game.style}"></td>
+							<td th:text="${game.color}"></td>
+							
+							<td>
+								<a th:href="'/profile/' + ${game.opponent}" th:text="${game.opponent}"></a>
+                			</td>	
+
+							<td th:text="${game.winLoseDraw} + ' (' + ${game.outcome} + ')'"></td>
+
+						</tr>
+					</tbody>
+				</table>
+			</div>
+</div>
+	
+	
+	
+	
+	
+	
+
+
+
+
+	
+	</main>
+
+</body>
+</html>

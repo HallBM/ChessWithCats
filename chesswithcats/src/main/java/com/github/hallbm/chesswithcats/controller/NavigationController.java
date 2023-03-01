@@ -2,9 +2,13 @@ package com.github.hallbm.chesswithcats.controller;
 
 import java.security.Principal;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import com.github.hallbm.chesswithcats.model.Player;
+import com.github.hallbm.chesswithcats.model.Game.GameStyle;
 
 @Controller
 public class NavigationController {
@@ -20,38 +24,26 @@ public class NavigationController {
 	}
 	
 	@GetMapping("/")
-	public String getHomePage(Model model, Principal user) {
+	public String getHomePage(Model model, @AuthenticationPrincipal Player currentUser) {
 		
-		if (user != null) {
-			model.addAttribute("username", user.getName()); 
+		if (currentUser != null) {
+			model.addAttribute("username", currentUser.getUsername()); 
 		}
-		
+
 		return "index";
 	}
 	
 
 	
 	@GetMapping("/leaderboard")
-	public String showLeaders(Model model, Principal user) {
+	public String showLeaders(Model model, @AuthenticationPrincipal Player currentUser) {
 		
-		if (user != null) {
+		if (currentUser != null) {
 			model.addAttribute("authenticated", true);
-			model.addAttribute("username", user.getName()); 
+			model.addAttribute("username", currentUser.getUsername()); 
 		}
 		
 		return "leaderboard";
 	}
 	
-
-	
-	@GetMapping("/games")
-	public String showGames(Model model, Principal user) {
-		
-		if (user != null) {
-			model.addAttribute("authenticated", true);
-			model.addAttribute("username", user.getName()); 
-		}
-		
-		return "games";
-	}
 }

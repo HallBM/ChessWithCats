@@ -57,7 +57,7 @@
       <article>
 
         <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.42.png">
-        <h2>Classic Chess</h2>
+        <h2>CLASSIC</h2>
         <p>
           A classic game of chess without cats... how sad!
         </p>
@@ -65,7 +65,7 @@
       <article>
 
         <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.36.png">
-        <h2>Chess with Cats</h2>
+        <h2>OBSTRUCTIVE</h2>
         <p>
           Cats have taken over your chess board. They just want to play and be a part of the game. Play chess around
           these obstructive kitties!
@@ -74,7 +74,7 @@
       <article>
 
         <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-07 17.09.54.png" />
-        <h2>Cat Chess</h2>
+        <h2>AMBIGUOUS</h2>
         <p>
           The chess pieces are cats. But let's be honest - cats all look the same. Play chess while trying to keep track
           of your pieces!
@@ -83,7 +83,7 @@
       <article>
 
         <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.14.png">
-        <h2>Ultimate Cat Chess</h2>
+        <h2>DEFIANT</h2>
         <p>
           Cats never like being told what to do. Play cat chess with determined and stubborn felines that may stay where
           you place them... or may go where they please!
@@ -92,30 +92,7 @@
     </section>
 
 
-    <section> 
-     <div id="game-menu" sec:authorize="isAuthenticated()">
-        <form id="new-game" th:action="@{/gamerequest}" method="post">
-          <h2 style="text-align: center">Select New Game</h2>
-          <div class="newgameselection">
-          <select id="game" name="game" class="form-control">
-            <option value="game1" selected>Chess With Cats (Obstructive Kitties)</option>
-            <option value="game2">Cat Chess (Ambiguous Kitties)</option>
-            <option value="game3">Ultimate Cat Chess (Defiant Kitties)</option>
-            <option value="game0">Classic Chess (Kitty-less Chess)</option>
-          </select>
-          <select id="opponent" name="opponent" class="form-control">
-            <option value="0" selected>Self</option>
-            <option value="1">Computer</option>
-            <option value="2">Random Opponent</option>
-            <option value="friend2">Friend1</option>
-            <option value="friend3">Friend2</option>
-          </select>
-          <input id="submit" type="submit" value="START" class="btn btn-primary">
-          </div>
-        </form>
-      </div>
 
-    </section>
 
   </main>
 

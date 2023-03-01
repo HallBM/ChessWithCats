@@ -78,14 +78,18 @@ public class Player implements UserDetails, AuthenticatedPrincipal {
 	@NotBlank
 	private String email;
 
-	@Column(updatable = false)
+	@Column(name="date_joined", updatable = false)
 	@NotNull
 	@Temporal(TemporalType.DATE)
 	private Date dateJoined = new Date();
 
+	@Column(name = "last_login")
+	@Temporal(TemporalType.DATE)
+	private Date lastLogin;
+	
 	@Column
 	@NotNull
-	private boolean isLoggedIn = false;
+	private boolean isLogged = false;
 
 	@Column
 	@NotNull
@@ -94,21 +98,29 @@ public class Player implements UserDetails, AuthenticatedPrincipal {
 	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	private Collection<Authority> authorities;
 
-	@Column
-	private boolean isAccountNonExpired = true;
-
-	@Column
-	private boolean isAccountNonLocked = true;
-
-	@Column
-	private boolean isCredentialsNonExpired = true;
-
-	@Column
-	private boolean isEnabled = true;
-
 	@Override
 	public String getName() {
 		return username;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return true;
 	}
 	
 }
