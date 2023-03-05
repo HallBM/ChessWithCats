@@ -1,6 +1,7 @@
 package com.github.hallbm.chesswithcats.controller;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.github.hallbm.chesswithcats.dto.LoginCredentialsDTO;
@@ -30,16 +31,16 @@ public class UserController {
 
 	@Autowired
 	private PlayerServices playerServ;
-	
+
 	@Autowired
 	private PlayerRepository playerRepo;
-	
+
 	@GetMapping("/login")
 	public String loginPlayer(Model model, @AuthenticationPrincipal Player currentUser) {
 		if (currentUser != null) {
 			return "redirect:/";
 		}
-		
+
 		model.addAttribute("userLogin", new LoginCredentialsDTO());
 		return "login";
 	}
@@ -47,49 +48,49 @@ public class UserController {
 	@GetMapping("/login-success")
 	public String successfulLogin(@AuthenticationPrincipal Player currentUser) {
 		currentUser.setLogged(true);
-		currentUser.setLastLogin(new Date());
+		currentUser.setLastLogin(LocalDateTime.now());
 		playerRepo.save(currentUser);
 		return "redirect:/";
 	}
-	
+
 	@GetMapping("/login-fail")
-	public String failedLogin(Model model) { 
+	public String failedLogin(Model model) {
 		model.addAttribute("userLogin", new LoginCredentialsDTO());
 		model.addAttribute("loginFail", true);
 		return "login";
 	}
-	
+
 	@GetMapping("/registration-success")
 	public String loginAfterRegistration(Model model) {
 		model.addAttribute("successReg", true);
 		model.addAttribute("userLogin", new LoginCredentialsDTO());
 		return "login";
 	}
-	
+
 	@PostMapping("/login-player")
 	public LoginCredentialsDTO validateLogin(@ModelAttribute("userLogin") LoginCredentialsDTO loginCred) {
 		return loginCred;
 	}
 
-	//TODO only 1 log in per username	
+	//TODO only 1 log in per username
 
-	
+
 	@GetMapping("/register")
 	public String playerRegistration(Model model) {
 		model.addAttribute("playerReg", new PlayerRegistrationDTO());
 		return "register";
 	}
-	
+
 	@ResponseBody
-	@GetMapping("/username/")
-	public ResponseEntity<Boolean> getUserByUserName(@RequestParam("userInput") String userInput) {
-		Boolean isTaken = playerRepo.existsByUsername(userInput);
+	@PostMapping("/username")
+	public ResponseEntity<Boolean> getUserByUserName(@RequestBody Map<String, String> userInput) {
+		Boolean isTaken = playerRepo.existsByUsername(userInput.get("userInput"));
 		return new ResponseEntity<Boolean>(isTaken, HttpStatus.OK);
 	}
-	
+
 	@PostMapping("/register")
     public String registerPlayer(@Valid @ModelAttribute("playerReg") PlayerRegistrationDTO playerReg, BindingResult result, Model model) {
-   	
+
 		Player playerWithEmail = playerRepo.findByEmail(playerReg.getEmail());
 		Player playerWithUsername = playerRepo.findByUsername(playerReg.getUsername());
 
@@ -97,29 +98,29 @@ public class UserController {
 			result.rejectValue("email", null);
 			return "register";
 	    }
-		
+
 		if (playerWithUsername != null) {
 			result.rejectValue("username", null);
 			return "register";
 		}
-		
+
 		if (!playerReg.getPassword().equals(playerReg.getConfirmedPassword())) {
 			result.rejectValue("password", null);
 			return "register";
-		} 
-		
+		}
+
 	    if (result.hasErrors()){
 	        return "register";
 	    }
-		
+
 	    playerServ.registerPlayer(playerReg);
-		
+
         return "redirect:/registration-success";
 	}
-	
+
 	@GetMapping("/logout")
 	public String showLogout(Model model) {
 		return "logout";
 	}
-	
+
 }

@@ -1,8 +1,8 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
-import com.github.hallbm.chesswithcats.model.Game.GameStyle;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,12 +33,12 @@ public class GameRequest {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Long id;
+    private long id;
 	
 	@Column(name = "created_at", nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
-	private ZonedDateTime createdAt = ZonedDateTime.now();
-	
+	private LocalDateTime createdAt = LocalDateTime.now();
+
 	@ManyToOne
 	@JoinColumn(name = "sender_username", referencedColumnName = "username")
 	@NotNull
@@ -48,7 +48,7 @@ public class GameRequest {
 	@JoinColumn(name = "receiver_username", referencedColumnName = "username")
 	@NotNull
 	private Player receiver;
-		
+
 	@Column(nullable=false)
 	@NotNull
 	@Enumerated(EnumType.STRING)

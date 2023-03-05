@@ -1,6 +1,6 @@
 package com.github.hallbm.chesswithcats.controller;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.github.hallbm.chesswithcats.domain.FriendEnums.BlockedBy;
+import com.github.hallbm.chesswithcats.domain.FriendEnums.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.FriendRequest;
-import com.github.hallbm.chesswithcats.model.FriendRequest.BlockedBy;
-import com.github.hallbm.chesswithcats.model.FriendRequest.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.FriendRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
@@ -33,7 +33,7 @@ public class FriendController {
 
 	@Autowired
 	private FriendRequestRepository friendReqRepo;
-	
+
 	@Autowired
 	private FriendServices friendServ;
 
@@ -45,13 +45,13 @@ public class FriendController {
 
 		Set<String> pendingRequests = friendServ.getPendingFriendRequestUsernames(currentUser.getUsername());
 		model.addAttribute("pendingList", pendingRequests);
-		
+
 		Set<String> blockedUsernames = friendServ.getBlockedUsernames(currentUser.getUsername());
 		model.addAttribute("blockedList", blockedUsernames);
-		
+
 		Set<String> friendUsernames = friendServ.getFriendUsernames(currentUser.getUsername());
 		model.addAttribute("friendsList", friendUsernames);
-		
+
 		return "friends";
 	}
 
@@ -61,7 +61,7 @@ public class FriendController {
 			@AuthenticationPrincipal Player currentUser) {
 
 		Set<String> connectionNames = friendServ.getAllConnectionUsernamesAndSelf(currentUser.getUsername());
-		
+
 		List<String> results = playerRepo.searchNewFriends(userInput + "%").orElse(null);
 
 		if (!results.isEmpty()) {
@@ -82,8 +82,8 @@ public class FriendController {
 		FriendRequest newFriendReq = new FriendRequest();
 		newFriendReq.setSender(sender);
 		newFriendReq.setReceiver(receiver);
-		newFriendReq.setRequestDate(new Date());
-		newFriendReq.setLastModifiedDate(new Date());
+		newFriendReq.setRequestDate(LocalDate.now());
+		newFriendReq.setLastModifiedDate(LocalDate.now());
 		newFriendReq.setBlockedBy(BlockedBy.NEITHER);
 		newFriendReq.setStatus(FriendRequestStatus.PENDING);
 		friendReqRepo.save(newFriendReq);
@@ -101,8 +101,8 @@ public class FriendController {
 		FriendRequest friendBlockRequest = new FriendRequest();
 		friendBlockRequest.setSender(sender);
 		friendBlockRequest.setReceiver(receiver);
-		friendBlockRequest.setRequestDate(new Date());
-		friendBlockRequest.setLastModifiedDate(new Date());
+		friendBlockRequest.setRequestDate(LocalDate.now());
+		friendBlockRequest.setLastModifiedDate(LocalDate.now());
 		friendBlockRequest.setStatus(FriendRequestStatus.BLOCKED);
 		friendBlockRequest.setBlockedBy(BlockedBy.SENDER);
 
@@ -119,7 +119,7 @@ public class FriendController {
 
 		FriendRequest approvedFriendReq = friendReqRepo.findByReceiverUsernameAndSenderUsername(receiver, sender);
 		approvedFriendReq.setStatus(FriendRequestStatus.ACCEPTED);
-		approvedFriendReq.setLastModifiedDate(new Date());
+		approvedFriendReq.setLastModifiedDate(LocalDate.now());
 		friendReqRepo.save(approvedFriendReq);
 
 		return new ModelAndView("redirect:/friends");
@@ -135,7 +135,7 @@ public class FriendController {
 		FriendRequest blockedFriendReq = friendReqRepo.findByReceiverUsernameAndSenderUsername(receiver, sender);
 		blockedFriendReq.setStatus(FriendRequestStatus.BLOCKED);
 		blockedFriendReq.setBlockedBy(BlockedBy.RECEIVER);
-		blockedFriendReq.setLastModifiedDate(new Date());
+		blockedFriendReq.setLastModifiedDate(LocalDate.now());
 		friendReqRepo.save(blockedFriendReq);
 
 		return new ModelAndView("redirect:/friends");
@@ -149,7 +149,7 @@ public class FriendController {
 		String receiver = currentUser.getUsername();
 
 		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(receiver, sender);
-		
+
 		if (recordNumber != 1L) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
@@ -165,11 +165,11 @@ public class FriendController {
 
 		String sender = currentUser.getUsername();
 		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(receiver, sender);
-		
+
 		if (recordNumber != 1L) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
-		
+
 		return new ModelAndView("redirect:/friends");
 	}
 
@@ -182,30 +182,30 @@ public class FriendController {
 		FriendRequest blockedPendingReq = friendReqRepo.findByReceiverUsernameAndSenderUsername(receiver, sender);
 		blockedPendingReq.setStatus(FriendRequestStatus.BLOCKED);
 		blockedPendingReq.setBlockedBy(BlockedBy.SENDER);
-		blockedPendingReq.setLastModifiedDate(new Date());
+		blockedPendingReq.setLastModifiedDate(LocalDate.now());
 
 		friendReqRepo.save(blockedPendingReq);
 
 		return new ModelAndView("redirect:/friends");
 	}
-	
+
 	@ResponseBody
 	@PostMapping("/friendrequest/unfriend/{username}")
 	public ModelAndView unfriendPlayer(Model model, @PathVariable("username") String friendUsername,
 			@AuthenticationPrincipal Player currentUser) {
 
 		String currentUsername = currentUser.getUsername();
-		
+
 		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(friendUsername, currentUsername);
-		
+
 		if (recordNumber == 0L) {
 			recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(currentUsername, friendUsername);
 		}
-	
+
 		if (recordNumber != 1L) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
-		
+
 		return new ModelAndView("redirect:/friends");
 	}
 
@@ -215,17 +215,17 @@ public class FriendController {
 			@AuthenticationPrincipal Player currentUser) {
 
 		String currentUsername = currentUser.getUsername();
-		
+
 		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(friendUsername, currentUsername);
-		
+
 		if (recordNumber == 0L) {
 			recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(currentUsername, friendUsername);
 		}
-	
+
 		if (recordNumber != 1L) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
 		return new ModelAndView("redirect:/friends");
 	}
-	
+
 }

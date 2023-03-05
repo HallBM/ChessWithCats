@@ -1,8 +1,10 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.UUID;
+import java.time.LocalDate;
+
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameWinner;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -15,10 +17,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,43 +36,10 @@ import lombok.Setter;
 @Table(name = "games")
 public class Game {
 
-	public enum GameOutcome {
-		CHECKMATE, RESIGNATION, TIMEOUT, STALEMATE, INSUFFICIENT_MATERIAL, EXCESSIVE_MOVE_RULE, REPETITION, AGREEMENT, ABORTED, INCOMPLETE; 
-	}
-
-	public enum GameWinner {
-		WHITE, BLACK, DRAW; 
-	}
-	
-	public enum GameWLD{
-		WIN, LOSE, DRAW;
-	}
-	
-	public enum GameColor {
-		WHITE, BLACK, NEUTRAL
-	}
-	
-	public enum GameStyle {
-		CLASSIC("Classic Chess"), 
-		OBSTRUCTIVE("Obstructive Kitties"), 
-		AMBIGUOUS("Ambiguous Kitties"), 
-		DEFIANT("Defiant Kitties");
-		
-		private final String description;
-
-		private GameStyle(String description) {
-			this.description = description;
-		}
-
-		public String getDescription() {
-			return description;
-		}
-	}
-
 	@Id
-	@Column(nullable = false, unique = true)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Long gameId;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(columnDefinition = "BIGINT UNSIGNED AUTO_INCREMENT")
+    private long id;
 
 	@Column(length = 20)
 	@Enumerated(EnumType.STRING)
@@ -77,18 +48,18 @@ public class Game {
 	@Column(length = 21, nullable = false)
 	@NotNull
 	@Enumerated(EnumType.STRING)
-	private GameOutcome outcome;
-	
+	private GameOutcome outcome = GameOutcome.ACCEPTED;
+
 	@Column(length = 5)
 	@Enumerated(EnumType.STRING)
-	private GameWinner winner;
-	
-	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private GameWinner winner = null;
+
+	@ManyToOne(fetch = FetchType.LAZY)
 	@NotNull
 	@JoinColumn(name = "white_username", referencedColumnName = "username")
 	private Player white;
 
-	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@NotNull
 	@JoinColumn(name = "black_username", referencedColumnName = "username")
 	private Player black;
@@ -96,27 +67,23 @@ public class Game {
 	@Column(updatable = false)
 	@NotNull
 	@Temporal(TemporalType.DATE)
-	private Date acceptDate = new Date();
+	private LocalDate acceptDate = LocalDate.now();
 
-	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private ZonedDateTime startTime;
-
-	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private ZonedDateTime endTime;
-	
 	@Column
 	@NotNull
-	private boolean opponentIsHuman;
-	
-	// TODO setup game move details
-	// private GamePlay gamePlay;
+	private boolean opponentIsHuman = true;
 
-	// TODO setup white time remaining (for timed games)
-	// private GamePlay gamePlay;
+	//@OneToOne(mappedBy = "game", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	private GamePlay gamePlay = new GamePlay();
 
-	// TODO setup black time remaining (for timed games)
-	// private GamePlay gamePlay;
+	@Column(length = 64, updatable = false, nullable = false)
+	@NotNull
+	@Size(max = 64)
+	private String openingFen;
+
+	@Column(name="moves", length = 1000)
+	@Size(max = 1000)
+	private String moves = null;
 
 }

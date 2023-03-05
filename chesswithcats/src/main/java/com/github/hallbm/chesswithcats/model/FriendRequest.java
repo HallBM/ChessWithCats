@@ -1,13 +1,14 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.util.Date;
+import java.time.LocalDate;
 
-import jakarta.persistence.CascadeType;
+import com.github.hallbm.chesswithcats.domain.FriendEnums.BlockedBy;
+import com.github.hallbm.chesswithcats.domain.FriendEnums.FriendRequestStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,7 +19,6 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
-import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,17 +31,9 @@ import lombok.Setter;
 @Table(name = "friend_requests")
 public class FriendRequest {
 
-	public enum FriendRequestStatus {
-		PENDING, ACCEPTED, BLOCKED;
-	}
-	
-	public enum BlockedBy{
-		SENDER, RECEIVER, NEITHER;
-	}
-	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Long id;
+    private long id;
 
 	@ManyToOne
 	@JoinColumn(name = "sender_username", referencedColumnName = "username")
@@ -52,15 +44,15 @@ public class FriendRequest {
 	@JoinColumn(name = "receiver_username", referencedColumnName = "username")
 	@NotNull
 	private Player receiver;
-	
+
 	@Column(updatable = false)
 	@Temporal(TemporalType.DATE)
-	private Date requestDate;
-	
+	private LocalDate requestDate;
+
 	@Column
 	@Temporal(TemporalType.DATE)
-	private Date lastModifiedDate;
-	
+	private LocalDate lastModifiedDate;
+
 	@Column(length = 10, nullable=false)
 	@NotNull
 	@Enumerated(EnumType.STRING)
@@ -69,5 +61,5 @@ public class FriendRequest {
 	@Column(length = 10)
 	@Enumerated(EnumType.STRING)
 	private BlockedBy blockedBy;
-	
+
 }

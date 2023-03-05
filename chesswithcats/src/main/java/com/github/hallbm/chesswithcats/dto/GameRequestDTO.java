@@ -1,6 +1,6 @@
 package com.github.hallbm.chesswithcats.dto;
 
-import com.github.hallbm.chesswithcats.model.Game.GameStyle;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GameRequestDTO {
-	Long id;
+	String id;
 	String time;
 	String opponent;
 	GameStyle style;
