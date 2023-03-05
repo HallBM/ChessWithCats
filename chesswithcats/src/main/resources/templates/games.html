@@ -85,7 +85,7 @@
 							<td th:text="${request.style}"></td>
 
 							<td>
-								<form th:action="@{'/gamerequest/accept/' + ${request.id}}" method="post">
+								<form th:action="@{'/gamerequest/accept/' + ${request.id} +'/'+ ${request.style} +'/'+ ${request.opponent}}" method="post">
 									<button type="submit" th:value="${request.id}"
 										style="font-size: 1vw; color: green">
 										Accept <i class="fas fa-user-check" style="color: green"></i>
@@ -135,8 +135,8 @@
 							<td>
 								<form th:action="@{'/gamerequest/decline/' + ${pendingRequest.id}}" method="post">
 									<button type="submit" th:value="${pendingRequest.id}"
-										style="font-size: 1vw; color: green">
-										Cancel <i class="fas fa-user-check" style="color: green"></i>
+										style="font-size: 1vw; color: red">
+										Cancel <i class="fas fa-user-times" style="color: red"></i>
 									</button>
 								</form>
 							</td>
@@ -164,6 +164,7 @@
 							<th>Game Color</th>
 							<th>Opponent</th>
 							<th>Turn</th>
+							<th>Enter Game</th>
 							<th>Forfeit</th>
 
 						</tr>
@@ -171,7 +172,7 @@
 					<tbody>
 
 						<tr th:each="game : ${activeList}">
-							<td th:text="${game.gameId}"></td>
+							<td th:text="${game.id}"></td>
 							<td th:text="${game.style}"></td>
 							<td th:text="${game.color}"></td>
 							
@@ -182,10 +183,17 @@
 							<td th:text="${game.turn}"></td>
 
 							<td>
-								<form th:action="@{'/game/forfiet/' + ${game.gameId}}" method="post">
-									<button type="submit" th:value="${game.gameId}"
-										style="font-size: 1vw; color: green">
-										Forfeit <i class="fas fa-user-check" style="color: green"></i>
+								<form th:action="@{'/game/' + ${game.style} +'/' + ${game.id} +'/' + ${game.color}}" method="get">
+									<button type="submit" style="font-size: 1vw; color: green">
+										PLAY! <i class="fas fa-user-check" style="color: green"></i>
+									</button>
+								</form>
+							</td>
+							
+							<td>
+								<form th:action="@{'/game/forfeit/' + ${game.id}}" method="post">
+									<button type="submit" style="font-size: 1vw; color: red">
+										Forfeit <i class="fas fa-user-times" style="color: red"></i>
 									</button>
 								</form>
 							</td>
@@ -227,7 +235,7 @@
 					<tbody>
 
 						<tr th:each="game : ${archiveList}">
-							<td th:text="${game.gameId}"></td>
+							<td th:text="${game.id}"></td>
 							<td th:text="${game.style}"></td>
 							<td th:text="${game.color}"></td>
 							

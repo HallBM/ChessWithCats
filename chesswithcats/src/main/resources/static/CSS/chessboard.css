@@ -6,6 +6,7 @@ body{
     font-family: 'Roboto', sans-serif;
     height: 100vh;
     overflow:hidden;
+    user-select: none;
 }
 
 .info-panel{
@@ -117,18 +118,7 @@ a img {
     box-shadow: 1vh 1vh 1vh rgb(33, 33, 33);
 }
 
-#A8{
-    border-top-left-radius: 5px;
-}
-#A1{
-    border-bottom-left-radius: 5px;
-}
-#H8{
-    border-top-right-radius: 5px;
-}
-#H1{
-    border-bottom-right-radius: 5px;
-}
+
 
 
 .square {

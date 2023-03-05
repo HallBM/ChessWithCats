@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" type="text/css" href="CSS/chessboard.css" />
+  <link rel="stylesheet" type="text/css" th:href="@{/CSS/chessboard.css}" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,39 +16,36 @@
 <body>
   <div class="background">
     <div class="gameboard">
-      <div id="chessboard"></div>
+      <div id="chessboard" th:class="${color}"> <div id="pieceMapJson" th:text="${pieceMapJson}" style="display:none"></div></div>
     </div>
     <div class="info-panel">
       <div class="top">
 
-          <a th:href="@{/}">
-            <img class="leave-game" src="Images/Icons/back_arrow.png"/></a>
+          <a th:href="@{/}"><img class="leave-game" src="/Images/Icons/back_arrow.png"/></a>
 
-        <div id="game-number">
-          Game #123
-        </div>
+        <div th:text="'Game #'+${id}"></div>
       </div>
       <div id="turn">
         <div id="turn-color"></div>
         <div id="turn-text">White to Move</div>
       </div>
-      <div class="timers"><pre>  <u>Timers</u></pre>
+      <div class="timers"><pre>  Timers</pre>
         <div class= "white-timer"></div>
         <div class="black-timer"></div>
       </div>
 
-      <div class= "move-history"><pre>  <u>Moves</u></pre>
+      <div class= "move-history"><pre>  Moves</pre>
       </div>
 
-      <div class= "captured-pieces"><pre>  <u>Captured Pieces</u></pre>
+      <div class= "captured-pieces"><pre>  Captured Pieces</pre>
       </div>
 
     </div>
   </div>
 
 
-  <script src="JS/chessboard.js"></script>
-  <script src="JS/addpieces.js"></script>
+  <script th:src="@{/JS/chessboard.js}"></script>
+  <script th:src="@{/JS/addpieces.js}"></script> 
 
 </body>
 
