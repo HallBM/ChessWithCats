@@ -34,7 +34,7 @@
 							<label for="username">Username</label> 
 							<input type="text"
 								id="username" name="username" class="form-control username"
-								th:field="*{username}" required>
+								th:field="*{username}" autocomplete="off" required>
 
 							<p class="alert alert-danger" th:if="${#fields.hasErrors('username')}">Username already exists</p>
 							<p class="alert alert-danger" id="msg" style="display:none">Username already exists</p>
@@ -78,8 +78,7 @@
 						<div class="col-5 form-group">
 							<label for="confirmedPassword">Confirm Password</label> <input
 								type="password" id="confirmedPassword" name="confirmedPassword"
-								class="form-control" oninput="check(this)"
-								th:field="*{confirmedPassword}" required>
+								class="form-control" th:field="*{confirmedPassword}" required>
 						</div>
 						<div class="col-11 alert alert-danger" th:if="${#fields.hasErrors('password')}">Passwords do not match</div>
 
