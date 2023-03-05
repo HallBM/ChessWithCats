@@ -26,19 +26,25 @@ document.addEventListener("DOMContentLoaded", function() {
           } else {
             playerList.forEach(function(player) {
               resultsTable.innerHTML +=
-                '<tr><td><a href="/profile/' +
-                player +
-                '">' +
-                player +
-                '</a></td><td><form action="/friendrequest/send/' +
-                player +
-                '" method="POST"><button type="submit" name="selectedName" value="' +
-                player +
-                '" style="font-size:1vw; color:green">Request <i class="fas fa-user-check" style="color:green"></i></button></form></td><td><form action="/block/' +
-                player +
-                '" method="POST"><button type="submit" name="selectedName" value="' +
-                player +
-                '" style="font-size:1vw; color:red">Block User <i class="fas fa-user-slash" style="color:red"></i></button></form></td></tr>';
+                `<tr>
+                	<td>
+                		<a href="/profile/` + player + `">` + player + `</a>
+                	</td>
+                	<td>
+                		<form action="/friendrequest/send/` + player + `" method="POST">
+                			<button type="submit" name="selectedName" value="` + player + `" style="font-size:1vw; color:green">Request 
+                				<i class="fas fa-user-check" style="color:green"></i>
+                			</button>
+                		</form>
+                	</td>
+                	<td>
+                		<form action="/block/` + player + `" method="POST">
+                			<button type="submit" name="selectedName" value="` + player + `" style="font-size:1vw; color:red">Block User 
+                				<i class="fas fa-user-slash" style="color:red"></i>
+                			</button>
+                		</form>
+                	</td>
+                </tr>`;
             });
             document.getElementById("results").style.display = "block";
           }
@@ -47,10 +53,5 @@ document.addEventListener("DOMContentLoaded", function() {
           console.error(error);
         });
     }
-  });
-  document.getElementById("username").addEventListener("focus", function() {
-    setTimeout(function() {
-      document.getElementById("msg").style.display = "none";
-    }, 750);
   });
 });
