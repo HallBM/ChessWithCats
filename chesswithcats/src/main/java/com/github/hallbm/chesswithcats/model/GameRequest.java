@@ -32,7 +32,7 @@ import lombok.Setter;
 public class GameRequest {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 	
 	@Column(name = "created_at", nullable = false, updatable = false)

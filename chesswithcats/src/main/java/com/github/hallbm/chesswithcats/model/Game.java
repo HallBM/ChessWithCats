@@ -1,5 +1,6 @@
 package com.github.hallbm.chesswithcats.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
@@ -34,11 +35,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "games")
-public class Game {
+public class Game implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(columnDefinition = "BIGINT UNSIGNED AUTO_INCREMENT")
     private long id;
 
 	@Column(length = 20)
@@ -73,8 +75,7 @@ public class Game {
 	@NotNull
 	private boolean opponentIsHuman = true;
 
-	//@OneToOne(mappedBy = "game", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToOne(mappedBy = "game", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
 	private GamePlay gamePlay = new GamePlay();
 
 	@Column(length = 64, updatable = false, nullable = false)
@@ -82,8 +83,7 @@ public class Game {
 	@Size(max = 64)
 	private String openingFen;
 
-	@Column(name="moves", length = 1000)
-	@Size(max = 1000)
+	@Column(name="moves", length = 3072)
 	private String moves = null;
 
 }
