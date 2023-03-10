@@ -15,11 +15,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GameDTO {
-	String id;
-	String opponent;
-	GameStyle style;
-	GameColor color;
-	String turn;
-	GameOutcome outcome;
-	GameWLD winLoseDraw;
+	private String id;
+	private String opponent;
+	private GameStyle style;
+	private GameColor color;
+	private String turn;
+	private GameOutcome outcome;
+	private GameWLD winLoseDraw;
 }
