@@ -1,59 +1,71 @@
 package com.github.hallbm.chesswithcats.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
+import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
+import com.github.hallbm.chesswithcats.domain.MoveValidator;
+import com.github.hallbm.chesswithcats.domain.ObstructiveMoveValidator;
+import com.github.hallbm.chesswithcats.dto.MoveDTO;
+import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
+import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.repository.GamePlayRepository;
 import com.github.hallbm.chesswithcats.repository.GameRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class GamePlayServices {
 
 	@Autowired
-	GamePlayRepository gamPlayRepo;
+	GamePlayRepository gamePlayRepo;
 
 	@Autowired
 	GameRepository gameRepo;
+	
+	public Optional<MoveResponseDTO> validateMove(MoveDTO moveDTO, GamePlay gamePlay) {
 
-	/*
-	public static final String [] columnLetters = new String [] {"A","B","C","D","E","F","G","H"};
-
-	public GameBoard(String gameFen) {
-		this.gameFen = gameFen;
-		String [] splitFen = gameFen.split(" ");
-		loadPieces(splitFen[0]);
-
+		MoveValidator moveValidator;
+		switch(GameStyle.valueOf(moveDTO.getGameStyle().toUpperCase())) {
+			case OBSTRUCTIVE: 
+				moveValidator = new ObstructiveMoveValidator(gamePlay, moveDTO);
+				break;
+			case DEFIANT:
+			//	moveValidator = new DefiantMoveValidator(gamePlay, moveDTO);
+			//	break;
+			case CLASSIC:
+			case AMBIGUOUS:
+			default:
+				moveValidator = new MoveValidator(gamePlay, moveDTO);
+		}
+		return Optional.ofNullable(moveValidator.validate());
 	}
-
-	private static void loadPieces(String boardPositions) {
-		String [] row = positions;
-
-
+	
+	@Modifying
+	@Transactional
+	public void finalizeAndSaveGameState(MoveDTO moveDTO, MoveResponseDTO moveResponseDTO, GamePlay gamePlay) {
+		
+		if (gamePlay.getHalfMoves() == 1) {
+			gamePlay.getGame().setOutcome(GameOutcome.INCOMPLETE);
+		}
+		
+		boolean isCaptureMove = moveResponseDTO.getChessMoves().contains(ChessMove.CAPTURE);
+		boolean isPawnMove = moveResponseDTO.getOfficialChessMove().toLowerCase().startsWith("p");
+		
+		if (isCaptureMove || isPawnMove) {
+			gamePlay.resetFiftyMoveClock();
+		} else {	
+			gamePlay.incrementFiftyMoveClock();
+		}
+		
+		gamePlay.addMove(moveResponseDTO.getOfficialChessMove()); // updates move for both String and StringBuffer
+		gamePlay.incrementHalfMoves(); 
+		gamePlay.updateFenSet();
+		gamePlayRepo.save(gamePlay);
 	}
-
-	public GameBoard(String gameFen) {
-		this.gameFen = gameFen;
-		String [] splitFen = gameFen.split(" ");
-		loadPieces(splitFen[0]);
-
-
-
-	}
-
-	private static void loadPieces(String boardPositions) {
-		String [] row = positions
-
-
-
-	}
-	*/
-
-
-
-
-	//check50clock; reset if pawn moves or if capture (50 moves without pawn move or capture)
-
-
-
-
 }

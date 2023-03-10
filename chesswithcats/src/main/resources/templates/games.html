@@ -183,7 +183,7 @@
 							<td th:text="${game.turn}"></td>
 
 							<td>
-								<form th:action="@{'/game/' + ${game.style} +'/' + ${game.id} +'/' + ${game.color}}" method="get">
+								<form th:action="@{'/game/' + ${game.style} +'/' + ${game.id}}" method="get">
 									<button type="submit" style="font-size: 1vw; color: green">
 										PLAY! <i class="fas fa-user-check" style="color: green"></i>
 									</button>

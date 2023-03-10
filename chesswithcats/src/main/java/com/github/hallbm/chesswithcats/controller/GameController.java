@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,8 +15,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,13 +26,18 @@ import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.dto.GameDTO;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
+import com.github.hallbm.chesswithcats.dto.MoveDTO;
+import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.Game;
+import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.model.GameRequest;
 import com.github.hallbm.chesswithcats.model.Player;
+import com.github.hallbm.chesswithcats.repository.GamePlayRepository;
 import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.FriendServices;
+import com.github.hallbm.chesswithcats.service.GamePlayServices;
 import com.github.hallbm.chesswithcats.service.GameServices;
 
 import jakarta.transaction.Transactional;
@@ -51,6 +60,12 @@ public class GameController {
 	@Autowired
 	private FriendServices friendServ;
 
+	@Autowired
+	private GamePlayServices gamePlayServ;
+	
+	@Autowired
+	private GamePlayRepository gamePlayRepo;
+	
 	@GetMapping("/games")
 	public String showGamesPage(Model model, @AuthenticationPrincipal Player currentUser) {
 
@@ -127,51 +142,68 @@ public class GameController {
 		return new ModelAndView("redirect:/games");
 	}
 
-	@Modifying
-	@Transactional
-	@PostMapping("/gamerequest/accept/{id}/{style}/{opponent}")
-	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent, @AuthenticationPrincipal Player currentUser) {
-
-		Game newGame = gameServ.createGameFromRequest(id, style, opponent);
-
-		System.out.println(newGame.getId());
-		
-
-		
-		
-		return "redirect:/game/" +  newGame.getStyle() + "/" + newGame.getId()
-				+ "/" + (newGame.getWhite().getUsername().equals(currentUser.getUsername()) ? "white" : "black");
-	}
-
 	@PostMapping("/game/forfeit/{id}")
 	public String forfeit(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 		gameServ.forfeitGame(Long.parseLong(id), currentUser.getUsername());
 		return "redirect:/games";
 	}
 
-	//coming from request accept redirect
+	@Modifying
+	@Transactional
+	@PostMapping("/gamerequest/accept/{id}/{style}/{opponent}")
+	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent, @AuthenticationPrincipal Player currentUser) {
+
+		Game newGame = gameServ.createGameFromRequest(id, style, opponent);
+		return "redirect:/game/" +  newGame.getStyle().toString().toLowerCase() + "/" + String.format("%06d",newGame.getId());
+	}
+
+	@GetMapping("/game/{style}/{id}")
+	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
+		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
+
+		if(game == null) {
+			return "redirect:/games";
+		} else {
+			String playerColor = game.getWhite().getUsername().equals(currentUser.getUsername()) ? "white" : "black";
+			return "redirect:/game/" + style.toLowerCase() + "/" + id + "/" + playerColor;
+		}
+	}
+	
 	@GetMapping("/game/{style}/{id}/{color}")
-	public String startGame(Model model, @PathVariable String style, @PathVariable String id, @PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
+	public String enterGame(Model model, @PathVariable String style, @PathVariable String id, @PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
 		
-		model.addAttribute("style", style);
-		model.addAttribute("id", Long.parseLong(id));
+		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
+		if(game == null) {
+			return "redirect:/games";
+		}
+
+		String playerColor = game.getWhite().getUsername().equals(currentUser.getUsername()) ? "white" : "black";
 		
-		Game game = gameRepo.findById(Long.parseLong(id)).get();
-		if (!currentUser.getUsername().equals(color.equals("white") ? game.getWhite().getUsername() : game.getBlack().getUsername())){
-			String correctedColor = color.equals("white") ? "black" : "white";
-			model.addAttribute("color", color);
-			return "redirect:/game/" + style + "/" + id + "/" + correctedColor;
+		if (!color.equals(playerColor)){
+			return "redirect:/game/" + style + "/" + id;
 		}
 		
 		ObjectMapper objectMapper = new ObjectMapper();
 		String pieceMapJson = objectMapper.writeValueAsString(game.getGamePlay().getGameBoard().getPieceMap());
 		
 		model.addAttribute("pieceMapJson", pieceMapJson);
-		model.addAttribute("color", "render_" + color);
+		model.addAttribute("color", "render_" + playerColor);
+		model.addAttribute("turn", game.getGamePlay().getHalfMoves() % 2 == 0 ? "black-turn" : "white-turn");
 
-		//pull more details from model
 		return "chessboard";
 	}
 
+	@ResponseBody
+	@PostMapping("/game/move")
+	public ResponseEntity<MoveResponseDTO> getUserByUserName(@RequestBody MoveDTO moveDTO) {
+		GamePlay gamePlay = gamePlayRepo.findByGameId(Long.parseLong(moveDTO.getGameId()));
+	
+		MoveResponseDTO moveResponseDTO = gamePlayServ.validateMove(moveDTO, gamePlay).orElse(new MoveResponseDTO());
+		if (moveResponseDTO.isValid()) {
+			gamePlayServ.finalizeAndSaveGameState(moveDTO, moveResponseDTO, gamePlay);
+		} 
+		
+		return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.OK);
+	}
 
 }

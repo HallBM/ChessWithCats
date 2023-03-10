@@ -105,7 +105,6 @@ public class GameServices {
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
 		}
-
 	}
 
 	@Modifying
@@ -113,6 +112,7 @@ public class GameServices {
 	public Game createGameFromRequest(Long requestId, GameStyle style, String opponentUsername) {
 
 		Game newGame = new Game();
+		newGame.getGamePlay().setGame(newGame);
 
 		GameRequest gameReq = gameReqRepo.findById(requestId).get();
 		newGame.setStyle(gameReq.getStyle());

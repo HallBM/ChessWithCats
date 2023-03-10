@@ -48,7 +48,7 @@ public class GameBoard implements Serializable{
 		StringBuilder fenPos = new StringBuilder(100);
 		int emptyCount = 0;
 
-		for (int row = 7; row >= 0; row--) {
+		for (int row = 0; row <8; row++) {
 			emptyCount = 0;
 			for (int col = 0; col < 8; col++) {
 				if(board[row][col] == null) {
