@@ -1,15 +1,15 @@
-const [_, games, gameStyle, gameNumber, playerColor] = window.location.pathname.split("/");
+const [_, base, gameStyle, gameId, playerColor] = window.location.pathname.split("/");
 let pieceMap = JSON.parse(document.getElementById("pieceMapJson").innerHTML);
 const chessboard = document.getElementById("chessboard");
 const isPlayerWhite = chessboard.classList.contains("render_white");
 
-let blackSquares = [];
-let whiteSquares = [];
+let blackPieces = [];
+let whitePieces = [];
 let allSquares = [];
 let catSquares = [];
-let allPieces = [];
 
-let isWhiteTurn = true;
+let isWhiteTurn = document.getElementById("turn").classList.contains("white-turn");
+let isWhitePlayer = playerColor == "white";
 let prevSq = "A1";
 
 const numbers = isPlayerWhite ? "87654321" : "12345678";
@@ -17,10 +17,10 @@ const letters = isPlayerWhite ? "ABCDEFGH" : "HGFEDCBA";
 
 function buildBoard() {
 	let isLightSquare = true;
-	let label;
 
 	for (let row = 0; row < 8; row++) {
 		for (let col = 0; col < 8; col++) {
+			let label;
 			let square = document.createElement("div");
 			square.setAttribute("id", letters[col] + numbers[row]);
 			square.classList.add("square", isLightSquare ? "light" : "dark");
@@ -62,7 +62,7 @@ function buildBoard() {
 
 function getPieceImgPath() {
 	let piecePath = [];
-	if (gameStyle === "AMBIGUOUS") {
+	if (gameStyle == "ambiguous") {
 		piecePath.push("/Images/CatChessPieces/");
 		piecePath.push(".gif");
 	} else {
@@ -93,140 +93,180 @@ function addGamePiecesWithDraggableFeatures(piecePath) {
 			continue;
 		}
 
-		let image = document.createElement("img");
-		image.setAttribute("src", piecePath[0] + pieceMap[loc] + piecePath[1]);
-		image.setAttribute("height", "100%");
-		image.setAttribute("name", loc);
-		image.setAttribute("onclick", "clickToMove");
-		image.addEventListener('click', clickToMove);
-		image.addEventListener('dragstart', dragStart);
-		if (pieceMap[loc][0] === "b") {
-			image.setAttribute("class", "black piece");
-			image.setAttribute("draggable", "false");
+		let pieceImage = document.createElement("img");
+		pieceImage.setAttribute("name", loc);
+		pieceImage.setAttribute("src", piecePath[0] + pieceMap[loc] + piecePath[1]);
+		pieceImage.alt = pieceMap[loc];
+		pieceImage.style = "height: 100%; width:100%; object-fit:contain;";
+		pieceImage.addEventListener("dragstart", dragStart);
+		
+		if (pieceMap[loc][0] == "w"){
+			pieceImage.classList.add("white", "piece");
+			pieceImage.setAttribute("draggable", isWhiteTurn && isWhitePlayer);
 		} else {
-			image.setAttribute("class", "white piece");
-			//TODO makes impossible to move; need to disable while testing move transmission from FE to BE
-			//if (playerColor == 'white'){
-			image.setAttribute("draggable", "true");
-			//} else {
-			//	image.setAttribute("draggable", "false");	
-			//}
+			pieceImage.classList.add("black", "piece");
+			pieceImage.setAttribute("draggable", !isWhiteTurn && !isWhitePlayer);
 		}
-		document.getElementById(loc).appendChild(image);
+		
+		document.getElementById(loc).appendChild(pieceImage);
 	}
 }
 
-function addSquareListeners() {
-	allSquares.forEach(sq => {
-		sq.addEventListener('dragenter', dragEnter)
-		sq.addEventListener('dragover', dragOver);
-		sq.addEventListener('dragleave', dragLeave);
-		sq.addEventListener('drop', drop);
-	});
-}
-
-function dragStart(event) {
-	if (event.target.getAttribute("draggable") == "false") {
-		return false;
-	}
-
-	event.dataTransfer.setData('text/plain', event.target.name);
-	setTimeout(() => {
-		event.target.classList.add('hide');
-	}, 0);
-
-	document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	document.getElementById(event.target.name).setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-
-	prevSq = event.target.name;
+function addSquareListeners(){
+    allSquares.forEach(sq => {
+        sq.addEventListener('dragenter', dragEnter)
+        sq.addEventListener('dragover', dragOver);
+        sq.addEventListener('dragleave', dragLeave);
+        sq.addEventListener('drop', drop);
+    });
 }
 
 function dragEnter(event) {
-	event.preventDefault();
-	event.target.classList.add('drag-over');
+    event.preventDefault();
+    event.target.classList.add('drag-over');
 }
 
 function dragOver(event) {
-	event.preventDefault();
-	event.target.classList.add('drag-over');
+    event.preventDefault();
+    event.target.classList.add('drag-over');
 }
 
 function dragLeave(event) {
-	event.target.classList.remove('drag-over');
+    event.target.classList.remove('drag-over');
 }
 
-function drop(event) {
+function dragStart(event) {
 
-	event.target.classList.remove('drag-over');
+	event.dataTransfer.setData('text/plain', event.target.name);
+	event.target.classList.add("hide");
 
-	let prev_id = event.dataTransfer.getData('text/plain');
+	document.getElementById(prevSq).classList.remove("highlight");
+	document.getElementById(event.target.name).classList.add("highlight");
+	prevSq = event.target.name;
+	
+}
 
-	const movedPiece = document.getElementsByName(prev_id)[0];
+async function drop(event) {
+	event.preventDefault();
+	
+	const startSquarePosition = event.dataTransfer.getData('text/plain');
+	const movedPiece = document.getElementsByName(startSquarePosition)[0];
+	
+	const isEmptyEndSquare = isDroppedOnEmptySquare(event.target);
+	const capturedPiece = !isEmptyEndSquare ? event.target : null;
+	const endSquare = isEmptyEndSquare ? event.target : capturedPiece.parentElement;
+	const endSquarePosition = endSquare.id;
+	
+	endSquare.classList.remove("drag-over");
 
-	if (event.target.id == prev_id || movedPiece.name == event.target.name) {
+	const moveFailConditions = 
+		(capturedPiece != null && capturedPiece.alt[1] == "k") ||
+		(!isEmptyEndSquare && hasSameColor(movedPiece, capturedPiece)) ||
+		(movedPiece.name === endSquarePosition);
+	
+	if (moveFailConditions){
+		movedPiece.classList.remove('hide');
 		return false;
 	}
-
-	// if moved onto an occupied square (square contains a piece)
-	if (event.target.children.length > 0 &&
-		((event.target.children[0].classList.contains("white") && movedPiece.classList.contains("white")) ||
-			(event.target.children[0].classList.contains("black") && movedPiece.classList.contains("black")) ||
-			(event.target.children[0].classList.contains("black") && movedPiece.classList.contains("white")) || //TODO remove when handling 'capture' logic
-			(event.target.children[0].classList.contains("white") && movedPiece.classList.contains("black"))    //TODO remove when handling 'capture' logic
-		)) {
+	
+	let promotionPiece = null; // TODO check pawn promotion; get selection from user
+	
+	const move = {
+		gameId: gameId,
+		gameStyle: gameStyle,
+		isChecked: null,
+		promotionPiece: promotionPiece,
+		startPos: startSquarePosition, 
+		endPos: endSquarePosition
+	};
+	
+	const moveResponse = await (async function (move) {
+		try {
+			const response = await fetch("/game/move", {
+				method: "post",
+				body: JSON.stringify(move),
+				headers: { "Content-Type": "application/json; charset=utf-8" },
+				cache: "no-cache"
+			});
+			return await response.json();
+		} catch (error) {
+			console.error(error);
+		}
+	})(move);
+	
+	if (moveResponse.valid === false){
+		movedPiece.classList.remove('hide');
 		return false;
 	}
-
-	// if moved directly onto another piece
-	if ((event.target.classList.contains("white") && movedPiece.classList.contains("white")) ||
-		(event.target.classList.contains("black") && movedPiece.classList.contains("black")) ||
-		(event.target.classList.contains("black") && movedPiece.classList.contains("white")) || //TODO remove when handling capture logic
-		(event.target.classList.contains("white") && movedPiece.classList.contains("black"))    //TODO remove when handling capture logic 
-	) {
-		return false;
-	}
-
-	event.target.appendChild(movedPiece);
-
-	movedPiece.setAttribute("name", event.target.id);
-
+	
+	console.log(moveResponse.pieceMoves);
 	movedPiece.classList.remove('hide');
 
+	for (let move of moveResponse.pieceMoves){
+		if (move[1] == null){
+			const enPassantCapture = document.getElementById(move[0]);
+			enPassantCapture.removeChild(enPassantCapture.children[0]);	
+		} else {
+			let startSquare = document.getElementById(move[0]);
+			let endSquare = document.getElementById(move[1]);
+			let movedPiece = document.querySelector("img[name='" + move[0] + "']");
+			
+			if (endSquare.hasChildNodes()) {
+				for (let child of endSquare.childNodes) {
+					if (child.nodeName === "IMG") {
+						endSquare.removeChild(child);
+						break;
+					}
+				}
+			}
+
+			endSquare.appendChild(movedPiece);
+			movedPiece.name = move[1];
+		}
+	}
+	
 	document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	event.target.setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	prevSq = event.target.id;
+	endSquare.setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
+	prevSq = endSquarePosition;
 
 	isWhiteTurn = !isWhiteTurn;
-	//if(playerColor == 'white'){//TODO makes impossible to move; need to disable while testing move transmission from FE to BE
-	whiteSquares.forEach(w => {
-		w.setAttribute('draggable', isWhiteTurn);
-	});
-	//} else {
-	blackSquares.forEach(b => {
-		b.setAttribute('draggable', !isWhiteTurn);
-	});
-	//}
+	
+	if(isWhitePlayer){
+		whitePieces.forEach(w => {
+			w.draggable = isWhiteTurn && isWhitePlayer;
+		});
+	} else {
+		blackPieces.forEach(b => {
+			b.draggable = !isWhiteTurn && !isWhitePlayer;
+		});
+	}
 
 	if (isWhiteTurn) {
-		document.getElementById("turn").setAttribute("style", "color : rgb(230, 230, 230);");
-		document.getElementById("turn-color").setAttribute("style", "background-color : white; border-color: black;");
+		document.getElementById("turn").classList.remove("black-turn");
+		document.getElementById("turn").classList.add("white-turn");		
 		document.getElementById("turn-text").innerHTML = "White to Move";
 
 	} else {
-		document.getElementById("turn").setAttribute("style", "color : black;");
-		document.getElementById("turn-color").setAttribute("style", "background-color : black; border-color: white;");
+		document.getElementById("turn").classList.remove("white-turn");
+		document.getElementById("turn").classList.add("black-turn");	
 		document.getElementById("turn-text").innerHTML = "Black to Move";
 	}
+	
+	
+	
 }
 
-function clickToMove(event) {
-	if (event.target.getAttribute("draggable") == "false") {
-		return false;
-	}
-	document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	document.getElementById(event.target.name).setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	prevSq = event.target.name;
+function hasSameColor(piece1, piece2) {
+	return (piece1.classList.contains("white") && piece2.classList.contains("white")) || 
+ 		 (piece1.classList.contains("black") && piece2.classList.contains("black"));
 }
+
+function isDroppedOnEmptySquare(dropTarget) {
+	return dropTarget.id !== "";
+}
+
+
+
 
 function addObstructiveCats() {
 
@@ -242,13 +282,9 @@ function addObstructiveCats() {
 	for (let index = 0; index < 4; index++) {
 		let image = document.createElement("img");
 		image.src = obstructiveCatPaths[index];
+		image.alt = "C";
 
-		if (image.clientWidth > image.clientHeight) {
-			image.setAttribute("height", "100%");
-		} else {
-			image.setAttribute("width", "100%");
-		}
-
+		image.style = "height:100%; width: 100%; object-fit:contain;"
 		image.draggable = false;
 
 		let catSquare = document.getElementById(catSquares[index]);
@@ -261,16 +297,15 @@ function addObstructiveCats() {
 }
 
 function finalizeBoard() {
-	if (gameStyle === "OBSTRUCTIVE") {
+	if (gameStyle == "obstructive") {
 		addObstructiveCats();
 	}
 	// TODO add gameplay details
 }
 
 function setSquareSets() {
-	whiteSquares = document.querySelectorAll(".white");
-	blackSquares = document.querySelectorAll(".black");
-	allPieces = document.querySelectorAll(".piece");
+	whitePieces = document.querySelectorAll(".white");
+	blackPieces = document.querySelectorAll(".black");
 	allSquares = document.querySelectorAll(".square");
 }
 
@@ -284,5 +319,22 @@ function displayGame() {
 }
 
 displayGame();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

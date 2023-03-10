@@ -172,6 +172,37 @@ a img {
     background-color: rgb(239, 208, 1, 0.2);
 }
 
+#turn.white-turn{
+	color : rgb(230, 230, 230);
+}
 
+#turn.black-turn{
+	color : black;
+}
 
+.white-turn #turn-color{
+	background-color : white; 
+	border-color: black;
+}
 
+.black-turn #turn-color{
+	background-color : black; 
+	border-color: white;
+}
+
+.hightlight{
+	background-color: rgb(239, 208, 11, 0.5);
+}
+
+.hide {
+  transition: 0.01s;
+  transform: translateX(-9999px);
+}
+
+.dragging{
+	z-index: 999;
+}
+
+.piece.dragging {
+  transform: none !important;
+}
