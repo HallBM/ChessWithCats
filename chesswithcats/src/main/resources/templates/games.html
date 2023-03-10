@@ -38,7 +38,7 @@
 
     <section> 
      <div id="game-menu" sec:authorize="isAuthenticated()">
-        <form id="new-game" th:action="@{/gamerequest}" th:object="${gameReq}" method="post">
+        <form id="new-game" th:action="@{/gameRequest}" th:object="${gameReq}" method="post">
           <h2 style="text-align: center">Select New Game</h2>
           <div class="newgameselection">
           <select id="style" name="style" class="form-control">
@@ -85,7 +85,7 @@
 							<td th:text="${request.style}"></td>
 
 							<td>
-								<form th:action="@{'/gamerequest/accept/' + ${request.id} +'/'+ ${request.style} +'/'+ ${request.opponent}}" method="post">
+								<form th:action="@{'/gameRequest/accept/' + ${request.id} +'/'+ ${request.style} +'/'+ ${request.opponent}}" method="post">
 									<button type="submit" th:value="${request.id}"
 										style="font-size: 1vw; color: green">
 										Accept <i class="fas fa-user-check" style="color: green"></i>
@@ -94,7 +94,7 @@
 							</td>
 
 							<td>
-								<form th:action="@{'/gamerequest/decline/' + ${request.id}}" method="post">
+								<form th:action="@{'/gameRequest/decline/' + ${request.id}}" method="post">
 									<button type="submit" th:value="${request.id}"
 										style="font-size: 1vw; color: black">
 										Decline <i class="fas fa-user-times" style="color: black"></i>
@@ -133,7 +133,7 @@
 							<td th:text="${pendingRequest.style}"></td>
 
 							<td>
-								<form th:action="@{'/gamerequest/decline/' + ${pendingRequest.id}}" method="post">
+								<form th:action="@{'/gameRequest/decline/' + ${pendingRequest.id}}" method="post">
 									<button type="submit" th:value="${pendingRequest.id}"
 										style="font-size: 1vw; color: red">
 										Cancel <i class="fas fa-user-times" style="color: red"></i>

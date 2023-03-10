@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceNotation;
 
 import jakarta.persistence.CollectionTable;
@@ -12,6 +15,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyClass;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Transient;
@@ -41,6 +45,8 @@ public class GameBoard implements Serializable{
 	@MapKeyClass(String.class)
 	@Column(name = "piece_type", columnDefinition="VARCHAR(2)")
 	@Enumerated(EnumType.STRING)
+	@JoinColumn(name = "game_plays_id", referencedColumnName = "id")
+	@OnDelete(action = OnDeleteAction.CASCADE)
 	@Size(max = 36)
 	private Map<String, PieceNotation> pieceMap = new HashMap<>();;
 	
