@@ -1,8 +1,5 @@
 package com.github.hallbm.chesswithcats.controller;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
@@ -18,13 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
-import com.github.hallbm.chesswithcats.dto.GameDTO;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
 import com.github.hallbm.chesswithcats.dto.MoveDTO;
 import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
@@ -69,45 +63,22 @@ public class GameController {
 	@GetMapping("/games")
 	public String showGamesPage(Model model, @AuthenticationPrincipal Player currentUser) {
 
-		List<GameRequest> receivedList = gameReqRepo.findByReceiverUsernameOrderByStyleAscCreatedAtDesc(currentUser.getUsername());
-		List<GameRequestDTO> receivedListDTO =
-				receivedList.stream().map(game -> gameServ.createGameRequestDTO(game, currentUser.getUsername())).collect(Collectors.toList());
-		model.addAttribute("receivedList", receivedListDTO);
-
-		List<GameRequest> pendingList = gameReqRepo.findBySenderUsernameOrderByStyleAscCreatedAtDesc(currentUser.getUsername());
-		List<GameRequestDTO> pendingListDTO =
-				pendingList.stream().map(game -> gameServ.createGameRequestDTO(game, currentUser.getUsername())).collect(Collectors.toList());
-		model.addAttribute("pendingList", pendingListDTO);
-
-		List<Game> activeList =
-				gameRepo.findByWhiteUsernameOrBlackUsernameAndOutcomeOrderByStyleAscIdDesc(currentUser.getUsername(), currentUser.getUsername(), GameOutcome.INCOMPLETE);
-		activeList.addAll(
-				gameRepo.findByWhiteUsernameOrBlackUsernameAndOutcomeOrderByStyleAscIdDesc(currentUser.getUsername(), currentUser.getUsername(), GameOutcome.ACCEPTED));
-		List<GameDTO> activeListDTO =
-				activeList.stream().map(game -> gameServ.createGameDTO(game, currentUser.getUsername())).collect(Collectors.toList());
-		model.addAttribute("activeList", activeListDTO);
-
-		//TODO incorrect method; displaying games where currentplayer is white and winner/outcome is null
-		List<Game> archiveList =
-				gameRepo.findByWhiteUsernameOrBlackUsernameAndWinnerNotNullOrderByStyleAscIdDesc(currentUser.getUsername(), currentUser.getUsername());
-		List<GameDTO> archiveListDTO =
-				archiveList.stream().map(game -> gameServ.createGameDTO(game, currentUser.getUsername())).collect(Collectors.toList());
-		model.addAttribute("archiveList", archiveListDTO);
+		model.addAttribute("receivedList", gameServ.getReceivedGameRequestDTOs(currentUser.getUsername()));
+		model.addAttribute("pendingList", gameServ.getSentGameRequestDTOs(currentUser.getUsername()));
+		model.addAttribute("activeList", gameServ.getActiveGameDTOs(currentUser.getUsername()));
+		model.addAttribute("archiveList", gameServ.getCompletedGameDTOs(currentUser.getUsername()));
 
 		model.addAttribute("gameStyles", GameStyle.values());
 		model.addAttribute("friends", friendServ.getFriendUsernames(currentUser.getUsername()));
 		model.addAttribute("gameReq", new GameRequestDTO());
 
-
 		return "games";
-
 	}
 
-	@PostMapping("/gamerequest")
+	@PostMapping("/gameRequest")
 	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq, BindingResult result, @AuthenticationPrincipal Player currentUser) {
 
-		//catch: existsBySenderUsernameAndReceiverUsernameAndStyle(String sender, String receiver, GameStyle style);
-
+		//catch: TODO existsBySenderUsernameAndReceiverUsernameAndStyle(String sender, String receiver, GameStyle style);
 
 		GameRequest newReq = new GameRequest();
 
@@ -132,9 +103,8 @@ public class GameController {
 		return "redirect:/games";
 	}
 
-
 	@ResponseBody
-	@PostMapping("/gamerequest/decline/{id}")
+	@PostMapping("/gameRequest/decline/{id}")
 	public ModelAndView declineGameRequest(@PathVariable("id") Long id) {
 
 		gameReqRepo.deleteById(id);
@@ -144,13 +114,14 @@ public class GameController {
 
 	@PostMapping("/game/forfeit/{id}")
 	public String forfeit(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
+
 		gameServ.forfeitGame(Long.parseLong(id), currentUser.getUsername());
 		return "redirect:/games";
 	}
 
 	@Modifying
 	@Transactional
-	@PostMapping("/gamerequest/accept/{id}/{style}/{opponent}")
+	@PostMapping("/gameRequest/accept/{id}/{style}/{opponent}")
 	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent, @AuthenticationPrincipal Player currentUser) {
 
 		Game newGame = gameServ.createGameFromRequest(id, style, opponent);
@@ -158,7 +129,7 @@ public class GameController {
 	}
 
 	@GetMapping("/game/{style}/{id}")
-	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
+	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id, @AuthenticationPrincipal Player currentUser) {
 		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
 
 		if(game == null) {
@@ -173,7 +144,7 @@ public class GameController {
 	public String enterGame(Model model, @PathVariable String style, @PathVariable String id, @PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
 		
 		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
-		if(game == null) {
+		if(game == null || game.getWinner() != null) {
 			return "redirect:/games";
 		}
 
@@ -189,7 +160,14 @@ public class GameController {
 		model.addAttribute("pieceMapJson", pieceMapJson);
 		model.addAttribute("color", "render_" + playerColor);
 		model.addAttribute("turn", game.getGamePlay().getHalfMoves() % 2 == 0 ? "black-turn" : "white-turn");
+		model.addAttribute("whitePlayer", game.getWhite().getUsername());
+		model.addAttribute("blackPlayer", game.getBlack().getUsername());
+		model.addAttribute("whiteOnline", game.getWhite().isLogged());
+		model.addAttribute("blackOnline", game.getBlack().isLogged());
 
+		System.out.println(game.getWhite().isLogged());
+		System.out.println(game.getBlack().isLogged());
+		
 		return "chessboard";
 	}
 
