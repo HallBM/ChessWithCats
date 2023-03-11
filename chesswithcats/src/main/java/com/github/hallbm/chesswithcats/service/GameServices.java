@@ -1,8 +1,12 @@
 package com.github.hallbm.chesswithcats.service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
@@ -38,7 +42,39 @@ public class GameServices {
 
 	@Autowired
 	private GamePlayServices gamePlayServ;
-
+	
+	@Transactional
+	public List<GameRequestDTO> getReceivedGameRequestDTOs (String username) {
+		List<GameRequest> receivedList = gameReqRepo.findByReceiverUsernameOrderByStyleAscCreatedAtDesc(username);
+		List<GameRequestDTO> receivedListDTO =
+				receivedList.stream().map(game -> createGameRequestDTO(game, username)).collect(Collectors.toList());
+		return receivedListDTO;
+	}
+	
+	@Transactional
+	public List<GameRequestDTO> getSentGameRequestDTOs (String username) {
+		List<GameRequest> pendingList = gameReqRepo.findBySenderUsernameOrderByStyleAscCreatedAtDesc(username);
+		List<GameRequestDTO> pendingListDTO =
+				pendingList.stream().map(game -> createGameRequestDTO(game, username)).collect(Collectors.toList());
+		return pendingListDTO;
+	}
+	
+	@Transactional
+	public List<GameDTO> getActiveGameDTOs (String username) {
+		List<Game> activeList = gameRepo.findActiveByUsername(username);
+		List<GameDTO> activeListDTO =
+				activeList.stream().map(game -> createGameDTO(game, username)).collect(Collectors.toList());
+		return activeListDTO;
+	}
+	
+	@Transactional
+	public List<GameDTO> getCompletedGameDTOs (String username) {
+		List<Game> completedList = gameRepo.findCompleteByUsername(username);
+		List<GameDTO> completedListDTO =
+				completedList.stream().map(game -> createGameDTO(game, username)).collect(Collectors.toList());
+		return completedListDTO;
+	}
+	
 	@Transactional
 	public GameRequestDTO createGameRequestDTO (GameRequest gameReq, String username) {
 
@@ -66,12 +102,16 @@ public class GameServices {
 		gameDTO.setOutcome(game.getOutcome());
 		if (gameDTO.getOutcome() == GameOutcome.ACCEPTED || gameDTO.getOutcome() == GameOutcome.INCOMPLETE) {
 			boolean isWhiteTurn = game.getGamePlay().getHalfMoves() % 2 == 1 ? true : false;
-			gameDTO.setTurn((isCurrentWhite == isWhiteTurn) ? "Yours" : "Theirs");
+			gameDTO.setTurn((isCurrentWhite == isWhiteTurn) ? "YOURS" : "THEIRS");
 		} else {
-			gameDTO.setWinLoseDraw(game.getWinner() == GameWinner.DRAW ? GameWLD.DRAW :
-				(isCurrentWhite && game.getWinner() == GameWinner.WHITE ? GameWLD.WIN : GameWLD.LOSE));
+			if (game.getWinner() == GameWinner.DRAW) {
+				gameDTO.setWinLoseDraw(GameWLD.DRAW);
+			} else if (isCurrentWhite) {
+				gameDTO.setWinLoseDraw(game.getWinner() == GameWinner.WHITE ? GameWLD.WIN : GameWLD.LOSE);
+			} else {
+				gameDTO.setWinLoseDraw(game.getWinner() != GameWinner.WHITE ? GameWLD.WIN : GameWLD.LOSE);
+			}
 		}
-
 		return gameDTO;
 	}
 
@@ -102,6 +142,7 @@ public class GameServices {
 		} else {
 			activeGame.setOutcome(GameOutcome.RESIGNATION);
 			activeGame.setWinner(activeGame.getWhite().getUsername().equals(username) ? GameWinner.BLACK : GameWinner.WHITE);
+			activeGame.setMoves(activeGame.getGamePlay().getMoveString());
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
 		}
@@ -139,5 +180,35 @@ public class GameServices {
 		return newGame;
 	}
 
+	@Transactional
+	public Map<GameStyle, Integer[]> getWinLoseDrawByPlayer (String username){
+		Map<GameStyle, Integer[]> stats = new HashMap<>();
 
+		for(GameStyle gs : GameStyle.values()) {
+			stats.put(gs,new Integer[] {0,0,0,0}); //TWLD
+		}
+		
+		List<Game> databaseResults = gameRepo.findCompleteByUsername(username);
+		
+		for (Game game : databaseResults) {
+			GameStyle gs = game.getStyle();
+			stats.get(gs)[0] += 1;
+			if (game.getWinner() == GameWinner.DRAW) {
+				stats.get(gs)[3] += 1;
+			} else if (game.getWinner() == GameWinner.WHITE) {
+				if (game.getWhite().getUsername().equals(username)) {
+					stats.get(gs)[1] += 1;
+				}else {
+					stats.get(gs)[2] += 1;
+				}
+			} else {
+				if (game.getBlack().getUsername().equals(username)) {
+					stats.get(gs)[1] += 1;
+				}else {
+					stats.get(gs)[2] += 1;
+				}
+			}
+		}
+		return stats;
+	} 
 }
