@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function() {
     event.preventDefault();
     let searchInput = document.getElementById("searchInput").value;
     if (searchInput === null || searchInput === "") {
-      document.getElementById("results").style.display = "none";
+      document.getElementById("resultsTable").style.display = "none";
     } else {
       fetch("/friends/playerSearch?userInput=" + searchInput, {
         method: "GET",
@@ -18,7 +18,9 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         })
         .then(function(playerList) {
-          let resultsTable = document.getElementById("resultsTable");
+		  	
+	
+          let resultsTable = document.getElementById("playerResults");
           resultsTable.innerHTML = "";
           if (playerList === null || playerList.length === 0) {
             resultsTable.innerHTML +=
@@ -28,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function() {
               resultsTable.innerHTML +=
                 `<tr>
                 	<td>
-                		<a href="/profile/` + player + `">` + player + `</a>
+                		<span><a style="color: white" href="/profile/` + player + `">` + player + `</a></span>
                 	</td>
                 	<td>
                 		<form action="/friendrequest/send/` + player + `" method="POST">
@@ -46,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 	</td>
                 </tr>`;
             });
-            document.getElementById("results").style.display = "block";
+            document.getElementById("resultsTable").style.display = "block";
           }
         })
         .catch(function(error) {

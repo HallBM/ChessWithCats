@@ -1,43 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="CSS/general.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  
-  <title>Chess With Cats!</title>
+<head th:insert="~{fragments/header.html}">
+	<title>Chess With Cats!</title>
+	
 </head>
-
 <body>
-  <header>
-    <span>Chess With Cats!</span>
-    <nav>
-      <ul sec:authorize="isAuthenticated()">
-        <li><a th:href="@{/}">Home</a></li>
-        <li><a href="#game-menu">New Game</a></li>
-        <li><a th:href="@{/leaderboard}">Leader Board</a></li>
-        <li><a th:href="@{/friends}">Friends</a></li>
-        <li><a th:href="@{/games}">Games</a></li>
-        <li><a th:href="@{/profile}">Profile</a></li>
-        <li><a th:href="@{/logout}">Logout</a></li>
-       </ul>
-       <ul sec:authorize="!isAuthenticated()"> 
-        <li><a th:href="@{/login}">Login</a></li>
-      </ul>
-    </nav>
-  </header>
-
+	<header th:replace="~{fragments/head.html}"></header>
   <main>
-<div sec:authorize="isAuthenticated()">
-    <h1 style="color: red;">SUCCESSFUL LOGIN AND AUTHENTICATION!!!!! WELCOME <span th:text="${username}">User</span>!</h1>
-    </div>
-
+  	<section sec:authorize="isAuthenticated()" class="intro" style="margin-top: 11vh; margin-bottom:-10vh; padding: 1vh 0vh; width:100%; background-color: #dead7c; justify-content:center;" >
+    <h2 th:text="'Welcome  '+${username}+'!'"></h2><br>
+	</section>
+    
     <section class="intro">
+
       <img id="landing-img" src="Images/large_img_catsplayingchess/rick-j-brown-OlyjFqrtPGo-unsplash.jpg">
       <p>In the land of Felinia, cats and chess had a long and storied history. For generations, these cats had observed
         the game of chess, fascinated by the strategic movements of the pieces. They had always longed to be a part of
@@ -55,7 +32,7 @@
     </section>
     <section class="game-list">
       <article>
-
+		
         <img src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.52.42.png">
         <h2>CLASSIC</h2>
         <p>
@@ -90,21 +67,7 @@
         </p>
       </article>
     </section>
-
-
-
-
   </main>
-
-  <footer>
-    <nav>
-      <ul>
-        <li><a th:href="@{/about}">About</a></li>
-        <li><a th:href="@{/contact}">Contact</a></li>
-      </ul>
-    </nav>
-  </footer>
-
+  	<footer th:replace="~{fragments/footer.html}"></footer>
 </body>
-
 </html>

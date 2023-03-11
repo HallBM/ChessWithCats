@@ -1,49 +1,60 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" type="text/css" th:href="@{/CSS/chessboard.css}" />
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" type="text/css" th:href="@{/CSS/chessboard.css}" />
+
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 
 </head>
 
 <body>
-  <div class="background">
-    <div class="gameboard">
-      <div id="chessboard" th:class="${color}"> <div id="pieceMapJson" th:text="${pieceMapJson}" style="display:none" class="highlight">
-      </div>
-    </div>
-  </div>
-    <div class="info-panel">
-      <div class="top">
+	<div class="background">
+		<div class="gameboard">
+			<div id="chessboard" th:class="${color}">
+				<div id="pieceMapJson" th:text="${pieceMapJson}"
+					style="display: none" class="highlight"></div>
+			</div>
+		</div>
+		<div class="info-panel">
+			<div class="top">
 
-          <a th:href="@{/}"><img class="leave-game" src="/Images/Icons/back_arrow.png"/></a>
+				<a th:href="@{/}"><img class="leave-game"
+					src="/Images/Icons/back_arrow.png" /></a>
 
-        <div th:text="'Game #'+${id}"></div>
-      </div>
-      <div id="turn" th:classappend="${turn}">
-        <div id="turn-color"></div>
-        <div id="turn-text" th:text="${turn == 'black-turn'} ? 'Black to Move' : 'White to Move'"> White to Move</div>
-      </div>
-      <div class="timers">Timers
-        <div class= "white-timer"></div>
-        <div class="black-timer"></div>
-      </div>
+				<div th:text="'Game #'+${id}"></div>
+			</div>
+			<div id="turn" th:classappend="${turn}">
+				<div id="turn-color"></div>
+				<div id="turn-text"
+					th:text="${turn == 'black-turn'} ? 'Black to Move' : 'White to Move'">
+					White to Move</div>
+			</div>
+			<div class="players">
+				Players
+				<div class="container white-player"><span th:text="'WHITE: ' + ${whitePlayer}"></span><i th:if="${whiteOnline}" style="font-size: 2vw; color: green; margin-left:1vw" class="fa fa-user-circle"></i></div>
+				<div class="container black-player"><span th:text="'BLACK: ' + ${blackPlayer}"></span><i th:if="${blackOnline}" style="font-size: 2vw; color: green; margin-left:1vw" class="fa fa-user-circle"></i></div>
+		
+			</div>
 
-      <div class= "move-history">Moves</div>
+			<div class="move-history">Moves</div>
 
-      <div class= "captured-pieces">Captured Pieces</div>
+			<div class="captured-pieces">Captured Pieces</div>
 
-    </div>
-  </div>
+		</div>
+	</div>
 
 
-  <script th:src="@{/JS/chessboard.js}"></script>
+	<script th:src="@{/JS/chessboard.js}"></script>
 
 </body>
 

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+
+<head th:insert="~{fragments/header.html}">
+	<title>MOk cup</title>
+</head>
+<body>
+	<header th:replace="~{fragments/head.html}"></header>
+	<main style="height: 130vh; min-height: 100%;">
+		<h1>body content</h1>
+		
+		
+		
+		<table class="table table-striped">
+ <thead>
+    <tr>
+        <th>Player</th>
+        <th></th>
+        <th></th>
+        <th></th>
+    </tr>
+ </thead>
+    <tbody>
+
+     <tr>
+      <td><img style="width: 10vw" th:src="@{'Images/large_img_catsplayingchess/' + ${iconFile}}">
+    	<span>Username</span></td>
+      <td><button style="font-size:1vw; color:green">Accept <i class="fas fa-user-check" style="color:green"></i></button></td>
+      <td><button style="font-size:1vw; color:black">Decline <i class="fas fa-user-times" style="color:black"></i></button></td>
+      <td><button style="font-size:1vw; color:red">Block User <i class="fas fa-user-slash" style="color:red"></i></button></td>
+      </tr>
+    </tbody>
+</table>
+						<div class="container white-player">black<i  style="font-size: 2vw; color: green" class="fa fa-user-circle"></i></div>
+				<div class="container black-player" >white <i  style="font-size: 2vw; color: green" class="fa fa-user-circle"></i></div>
+			fas fa-plus-circle
+		
+		fas fa-check-circle'
+		
+		'fas fa-times-circle'
+		
+			fas fa-user-edit
+		
+	</main>
+	<footer th:replace="~{fragments/footer.html}"></footer>
+</body>
+</html>

@@ -1,133 +1,71 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" th:href="@{/CSS/general.css}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <title>Player Profile</title>
+<head th:insert="~{fragments/header.html}">
+<title>Profile</title>
 </head>
-
 <body>
-  <header>
-    <span>Chess With Cats!</span>
-    <nav>
-      <ul sec:authorize="isAuthenticated()">
-        <li><a th:href="@{/}">Home</a></li>
-        <li><a href="#game-menu">New Game</a></li>
-        <li><a th:href="@{/leaderboard}">Leader Board</a></li>
-        <li><a th:href="@{/friends}">Friends</a></li>
-        <li><a th:href="@{/games}">Games</a></li>
-        <li><a th:href="@{/profile}">Profile</a></li>
-        <li><a th:href="@{/logout}">Logout</a></li>
-       </ul>
-       <ul sec:authorize="!isAuthenticated()"> 
-        <li><a th:href="@{/login}">Login</a></li>
-      </ul>
-    </nav>
-  </header>
-<div>
-<h1>User Profile</h1>
-<button th:if="${isEditable}" type="submit" class="btn btn-primary btn-block">Edit profile</button>
+	<header th:replace="~{fragments/head.html}"></header>
 
-<img style="width: 10vw" th:src="@{'/Images/large_img_catsplayingchess/' + ${iconFile}}">
-    <p><strong>Username:</strong> <span th:text="${username}"></span></p>
-    <p th:if="${password} != null"><strong>Password:</strong> <span th:text="${password}"></span></p> 
-    <p th:if="${password} != null"><strong>Email:</strong> <span th:text="${email}"></span></p> 
-    <p th:if="${password} != null"><strong>Full Name:</strong> <span th:text="${name}"></span></p>
- 	<p><strong>Member since:</strong> <span th:text="${dateJoined} + ${accountDays}"></span></p>
-</div>	
-<div>
-<h1>Game Outcomes</h1>	
+	<main>
+
+		<div class="container" style="padding-top: 8vh;">
 	
- <table class="table table-striped">
- <thead>
-    <tr>
-        <th>Games Played</th>
-        <th>Wins</th>
-        <th>Draws</th>
-        <th>Losses</th>
-    </tr>
- </thead>
-    
-<!-- For each game, set row label and fill player information for above th 
-     <tbody>
-     <tr th:each="friend : ${friendList}">
-      <td><img style="width: 2vw" th:src="@{'Images/large_img_catsplayingchess/' + ${friend.iconFile}}"><span th:text="${friend.username}"></span></td>
-      <td th:text="${friend.gamesPlayed}"></td>
-      <td th:text="${friend.gamesWin}"></td>
-      <td th:text="${friend.gamesDraw}"></td>
-      <td th:text="${friend.gamesLoss}"></td>
-      <td th:text="PATCH REQ BUTTON UNDO"></td>
-      <td th:text="PATCH REQ BUTTON REMOVE FRIEND"></td>
-      <td th:text="PATCH REQ BUTTON BLOCK FRIEND"></td>
-     </tr>
-    </tbody>
-
--->
-</table>
-
-
-<!-- TODO friend search -->
-<br>
-<div class="col-md-5">
-<h1>Friends List</h1>
- <table class="table table-striped">
- <thead>
-    <tr>
-        <th>Friend</th>
-        <th>Games Played</th>
-        <th>Win</th>
-        <th>Draw</th>
-        <th>Loss</th>
-        <th></th>
-        <th></th> <!-- space holder remove friend -->
-        <th></th> <!-- space holder blocked friend -->
-    </tr>
- </thead>
- <!--  Fill out when adding to friends list is ready    
-    <tbody>
-
-     <tr th:each="friend : ${friendList}">
-      <td><img style="width: 2vw" th:src="@{'Images/large_img_catsplayingchess/' + ${friend.iconFile}}"><span th:text="${friend.username}"></span></td>
-      <td th:text="${friend.gamesPlayed}"></td>
-      <td th:text="${friend.gamesWin}"></td>
-      <td th:text="${friend.gamesDraw}"></td>
-      <td th:text="${friend.gamesLoss}"></td>
-      <td th:text="PATCH REQ BUTTON UNDO"></td>
-      <td th:text="PATCH REQ BUTTON REMOVE FRIEND"></td>
-      <td th:text="PATCH REQ BUTTON BLOCK FRIEND"></td>
-     </tr>
-    </tbody>
- -->
-</table>
-
-</div>
-
-
-
-<br>
+			<div class="row">
+				<div class="col-3 justify-content-end">
+					<img style="width: 70%; margin-bottom: 4vh;" th:src="@{'/Images/large_img_catsplayingchess/' + ${iconFile}}">
+				
+				</div>
+				<div class="col-6">
+					<p class="profile-label" ><strong>Username:</strong> <span class="profile" th:text="${username}"></span></p>
+					<p class="profile-label" th:if="${password} != null">
+						<strong>Password:</strong> <span class="profile" th:text="${password}"></span>
+					</p>
+					<p class="profile-label" th:if="${password} != null">
+						<strong>Email:</strong> <span class="profile" th:text="${email}"></span>
+					</p>
+					<p class="profile-label" th:if="${password} != null">
+						<strong>Name:</strong> <span class="profile" th:text="${name}"></span>
+					</p>
+					<p class="profile-label" >
+						<strong>Member since:</strong> <span class="profile" 
+							th:text="${dateJoined} + ${accountDays}"></span>
+					</p>
+				</div>
+				<div class="col-2"></div>
+			</div>
+			<div class="row"></div>
+	<div class="col-6">
 
 
 
 
+			<h2>Game Outcomes</h2>
+
+			<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Game Style</th>
+						<th>Total</th>
+						<th>Wins</th>
+						<th>Draws</th>
+						<th>Losses</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="gameStyle : ${gameResults}">
+						<td th:text="${gameStyle.key}"></td>
+						<td th:text="${gameStyle.value[0]}"></td>
+						<td th:text="${gameStyle.value[1]}"></td>
+						<td th:text="${gameStyle.value[2]}"></td>
+						<td th:text="${gameStyle.value[3]}"></td>
+					</tr>
+				</tbody>
 
 
-<h1>Blocked List</h1>
-
-
-
-
-
-
-<h1>Active games</h1>
-<div>Unfinished games</div>
-<div></div>
-<h1>Completed games</h1>
-<div>20 most recent games [with replay button to re-submit request]</div>
+			</table>
+		</div>	</div>
+	</main>
 </body>
 </html>
