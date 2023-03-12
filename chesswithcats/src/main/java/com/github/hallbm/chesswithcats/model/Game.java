@@ -5,7 +5,6 @@ import java.time.LocalDate;
 
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameWinner;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -51,10 +50,8 @@ public class Game implements Serializable {
 	@NotNull
 	@Enumerated(EnumType.STRING)
 	private GameOutcome outcome = GameOutcome.ACCEPTED;
-
-	@Column(length = 5)
-	@Enumerated(EnumType.STRING)
-	private GameWinner winner = null;
+	
+	private String winner = null;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@NotNull

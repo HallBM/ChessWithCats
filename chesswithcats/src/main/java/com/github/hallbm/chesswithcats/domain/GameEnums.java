@@ -90,10 +90,6 @@ public class GameEnums {
 		ACCEPTED, INCOMPLETE;
 	}
 
-	public enum GameWinner {
-		WHITE, BLACK, DRAW;
-	}
-
 	public enum GameWLD{
 		WIN, LOSE, DRAW;
 	}
