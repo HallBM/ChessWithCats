@@ -30,17 +30,9 @@ public class NavigationController {
 		return "index";
 	}
 
+	@GetMapping("/error")
+	public String getErrorPage() {
 
-
-	@GetMapping("/leaderboard")
-	public String showLeaders(Model model, @AuthenticationPrincipal Player currentUser) {
-
-		if (currentUser != null) {
-			model.addAttribute("authenticated", true);
-			model.addAttribute("username", currentUser.getUsername());
-		}
-
-		return "leaderboard";
+		return "error";
 	}
-
 }
