@@ -8,201 +8,181 @@
 <body>
 	<header th:replace="~{fragments/head.html}"></header>
 	<main>
-
-		<section class="col-11" style="display: flex; justify-content: center;">
-			<div class="col-6">
-				<div class="col-1"></div>
-				<div class="col-10">
+		<div class="container col-6" style="margin-top: 10vh;">
+			<div class="row">
+				<div class="col-12">
 					<h2>FRIENDS</h2>
 					<table class="table table-striped justify-content-center"
 						th:if="${!#lists.isEmpty(friendsList)}">
 						<thead>
 							<tr>
-								<th>Player</th>
+								<th></th>
 								<th></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-
 							<tr th:each="friend : ${friendsList}">
-								<td><span><a  style="color: white" th:href="@{'/profile/'+${friend}}" th:text="${friend}" ></a></span></td>
+								<td><span><a style="color: white"
+										th:href="@{'/profile/'+${friend}}" th:text="${friend}"></a></span></td>
 								<td>
 									<form th:action="@{'/friendrequest/unfriend/' + ${friend}}"
 										method="post">
 										<button type="submit" th:name="username" th:value="${friend}"
-											style="font-size: 1vw; color: black">
-											Unfriend <i class="fas fa-user-times" style="color: black"></i>
-										</button>
+											class="btn btn-dark">Unfriend</button>
 									</form>
 								</td>
-
 								<td>
 									<form th:action="@{'/friendrequest/block/' + ${friend}}"
 										method="post">
 										<button type="submit" th:name="username" th:value="${friend}"
-											style="font-size: 1vw; color: red">
-											Block User <i class="fas fa-user-slash" style="color: red"></i>
-										</button>
+											class="btn btn-danger">Block User</button>
 									</form>
 								</td>
 							</tr>
 						</tbody>
 					</table>
-
 				</div>
-
-				<h2 style="margin-top: 4vh;">SEARCH</h2>
-				
-				<form id="search" >
-					<label for="searchInput"></label> <input
-						type="text" id="searchInput" name="searchInput"
-						placeholder="Enter Username" required> <span></span>
-					<button type="submit">Search</button>
-				</form>
-
-				<div id="resultsTable" class="col-10" style="display: none; margin-top: 2vh;">
-					<table class="table table-striped justify-content-center">
-						<thead>
-							<tr>
-								<th>Search Results</th>
-								<th></th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody id="playerResults"></tbody>
-					</table>
-				</div>
-				<div class="col-1"></div>
 			</div>
-			<div class="col-6">
+			<div class="row">
+				<div class="col-12">
+					<h2 style="margin-top: 4vh;">SEARCH</h2>
+
+					<form id="search">
+						<label for="searchInput"></label> <input type="text"
+							id="searchInput" name="searchInput" placeholder="Enter Username"
+							required> <span></span>
+						<button type="submit">Search</button>
+					</form>
+
+					<div id="resultsTable" class="row"
+						style="display: none; margin-top: 2vh;">
+						<div class="col-12">
+							<table class="table table-striped justify-content-center">
+								<thead>
+									<tr>
+										<th></th>
+										<th></th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody id="playerResults"></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="container col-6" style="margin-top: 10vh;">
+			<div class="row">
+
 				<div class="col-12" th:if="${!#lists.isEmpty(receivedList)}">
 					<h2>RECEIVED REQUESTS</h2>
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Player</th>
+								<th></th>
 								<th></th>
 								<th></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-
 							<tr th:each="sender : ${receivedList}">
-								<td><span><a  style="color: white" th:href="@{'/profile/'+${sender}}" th:text="${sender}" ></a></span></td>
-
+								<td><span><a style="color: white"
+										th:href="@{'/profile/'+${sender}}" th:text="${sender}"></a></span></td>
 								<td>
 									<form th:action="@{'/friendrequest/accept/' + ${sender}}"
 										method="post">
 										<button type="submit" th:name="username" th:value="${sender}"
-											style="font-size: 1vw; color: green">
-											Accept <i class="fas fa-user-check" style="color: green"></i>
-										</button>
+											class="btn btn-success">Accept</button>
 									</form>
 								</td>
-
 								<td>
 									<form th:action="@{'/friendrequest/decline/' + ${sender}}"
 										method="post">
 										<button type="submit" th:name="username" th:value="${sender}"
-											style="font-size: 1vw; color: black">
-											Decline <i class="fas fa-user-times" style="color: black"></i>
-										</button>
+											class="btn btn-dark">Decline</button>
 									</form>
 								</td>
-
 								<td>
 									<form th:action="@{'/friendrequest/block/' + ${sender}}"
 										method="post">
 										<button type="submit" th:name="username" th:value="${sender}"
-											style="font-size: 1vw; color: red">
-											Block User <i class="fas fa-user-slash" style="color: red"></i>
-										</button>
+											class="btn btn-danger">Block User</button>
 									</form>
 								</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
-
+			</div>
+			<div class="row">
 				<div class="col-12" th:if="${!#lists.isEmpty(pendingList)}">
 					<h2>SENT REQUESTS</h2>
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Player</th>
+								<th></th>
 								<th></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-
 							<tr th:each="receiver : ${pendingList}">
-					<td><span><a  style="color: white" th:href="@{'/profile/'+${receiver}}" th:text="${receiver}" ></a></span></td>
-
+								<td><span><a style="color: white"
+										th:href="@{'/profile/'+${receiver}}" th:text="${receiver}"></a></span></td>
 								<td>
 									<form th:action="@{'/pendingrequest/cancel/' + ${receiver}}"
 										method="post">
 										<button type="submit" th:name="username"
-											th:value="${receiver}" style="font-size: 1vw; color: black">
-											Cancel Request <i class="fas fa-user-times"
-												style="color: black"></i>
-										</button>
+											th:value="${receiver}" class="btn btn-dark">Cancel
+											Request</button>
 									</form>
 								</td>
-
 								<td>
 									<form th:action="@{'/pendingrequest/block/' + ${receiver}}"
 										method="post">
 										<button type="submit" th:name="username"
-											th:value="${receiver}" style="font-size: 1vw; color: red">
-											Block User <i class="fas fa-user-slash" style="color: red"></i>
-										</button>
+											th:value="${receiver}" class="btn btn-danger">Block
+											User</button>
 									</form>
 								</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
-	
+			</div>
+			<div class="row">
 				<div class="col-12" th:if="${!#lists.isEmpty(blockedList)}">
 					<h2>BLOCKED PLAYERS</h2>
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Player</th>
+								<th></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr th:each="blockedPlayer : ${blockedList}">
-		<td><span><a style="color: white" th:href="@{'/profile/'+${blockedPlayer}}" th:text="${blockedPlayer}" ></a></span></td>
-
+								<td><span><a style="color: white"
+										th:href="@{'/profile/'+${blockedPlayer}}"
+										th:text="${blockedPlayer}"></a></span></td>
 								<td>
 									<form th:action="@{'/unblock/' + ${blockedPlayer}}"
 										method="post">
 										<button type="submit" th:name="username"
-											th:value="${blockedPlayer}"
-											style="font-size: 1vw; color: black">
-											Unblock <i class="fas fa-user-times" style="color: black"></i>
-										</button>
+											th:value="${blockedPlayer}" class="btn btn-dark">
+											Unblock</button>
 									</form>
 								</td>
-
 							</tr>
 						</tbody>
 					</table>
-
 				</div>
-
-
-
-
 			</div>
-		</section>
+		</div>
 	</main>
 	<script src="JS/friendSearchAJAX.js"></script>
-
 </body>
 </html>
