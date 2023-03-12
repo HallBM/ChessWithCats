@@ -9,63 +9,165 @@
 	<header th:replace="~{fragments/head.html}"></header>
 
 	<main>
+		<section style="width: 100%"></section>
+		<div class="container col-11"
+			style="padding-top: 10vh; margin: 0; padding: 0">
 
-		<div class="container" style="padding-top: 8vh;">
-	
 			<div class="row">
-				<div class="col-3 justify-content-end">
-					<img style="width: 70%; margin-bottom: 4vh;" th:src="@{'/Images/large_img_catsplayingchess/' + ${iconFile}}">
-				
+				<div class="col-3 d-flex align-items-center justify-content-center">
+					<img style="width: 100%;"
+						th:src="@{'/Images/large_img_catsplayingchess/' + ${iconFile}}">
 				</div>
-				<div class="col-6">
-					<p class="profile-label" ><strong>Username:</strong> <span class="profile" th:text="${username}"></span></p>
-					<p class="profile-label" th:if="${password} != null">
-						<strong>Password:</strong> <span class="profile" th:text="${password}"></span>
-					</p>
-					<p class="profile-label" th:if="${password} != null">
-						<strong>Email:</strong> <span class="profile" th:text="${email}"></span>
-					</p>
-					<p class="profile-label" th:if="${password} != null">
-						<strong>Name:</strong> <span class="profile" th:text="${name}"></span>
-					</p>
-					<p class="profile-label" >
-						<strong>Member since:</strong> <span class="profile" 
-							th:text="${dateJoined} + ${accountDays}"></span>
-					</p>
+				<div class="col-6 d-flex align-items-center">
+					<div class="row">
+						<p class="profile-label" style="margin-top: 0;">
+							<strong>Username:</strong> <span class="profile"
+								th:text="${username}"></span>
+						</p>
+						<p class="profile-label" th:if="${password} != null">
+							<strong>Email:</strong> <span class="profile" id="updateEmail"
+								th:text="${email}"></span>
+						</p>
+						<p class="profile-label" th:if="${password} != null">
+							<strong>Password:</strong> <span id="updatePassword"
+								class="profile" th:text="${password}"></span>
+						</p>
+
+						<p class="profile-label" th:if="${password} != null">
+							<strong>Name:</strong> <span class="profile" th:text="${name}"
+								id="updateName"></span>
+						</p>
+
+						<p class="profile-label">
+							<strong>Member since:</strong> <span class="profile"
+								th:text="${dateJoined} + ${accountDays}"></span>
+						</p>
+							<p class="profile-label" th:if="${password} == null">
+							<strong>Account Status:</strong> <span class="profile" th:text="${accountStatus} ? 'Active':'Suspended'"></span>
+						</p>
+
+							<p class="profile-label" th:if="${password == null and online}">
+							<strong><em style="color:green">Online</em></strong></p>
+						<form th:if="${password} != null" id="expose-edit"
+							style="margin-top: 2vh;">
+							<button id="delete-acct" type="button" class="btn btn-danger">DELETE
+								ACCOUNT</button>
+						</form>
+					</div>
 				</div>
-				<div class="col-2"></div>
+				<div class="col-3" id="update-fields">
+					<form id="update" style="margin-top: 3vh; width: 100%">
+						<div class="row" id="password" style="display: none;">
+							<label for="oldPassword"></label> <input type="password"
+								id="oldPassword" name="oldPassword" for="confirmedPassword"></label>
+							<label for="newPassword"></label> <input type="password"
+								id="newPassword" name="newPassword"
+								placeholder="Enter New Password"
+								pattern="^[a-zA-Z\u00C0-\u00FF \-\.,']+$"
+								title="Only letters (incl. accented letters), spaces, commas, apostrophes, and hyphens allowed"
+								required> <label for="confirmedPassword"></label> <input
+								type="password" id="confirmedPassword" name="confirmedPassword"
+								placeholder="Confirm New Password" required>
+						</div>
+						<div class="row" id="email" style="display: none;">
+							<label for="newEmail"></label> <input type="email" id="newEmail"
+								name="newEmail" placeholder="Enter New Email" required>
+						</div>
+						<div class="row" id="name" style="display: none;">
+							<label for="newFirstName"></label> <input type="text"
+								id="newFirstName" name="newFirstName"
+								placeholder="Enter First Name"
+								pattern="^[a-zA-Z\u00C0-\u00FF \-\.,']+$"
+								title="Only letters (incl. accented letters), spaces, commas, apostrophes, and hyphens allowed"
+								required> <label for="newLastName"></label> <input
+								type="text" id="newLastName" name="newLastName"
+								placeholder="Enter Last Name"
+								pattern="^[a-zA-Z\u00C0-\u00FF \-\.,']+$"
+								title="Only letters (incl. accented letters), spaces, commas, apostrophes, and hyphens allowed"
+								required>
+						</div>
+						<div class="row" id="delete"
+							style="display: none; text-align: center; font-weight: bold; font-size: 2vw; margin-left: 3.2vw">Are
+							you sure???</div>
+						<div
+							style="margin-top: 3vh; display: flex; justify-content: space-around; width: 100%">
+							<button id="deleteDB" type="button" class="btn btn-danger"
+								style="display: none;">Delete</button>
+							<button id="cancel" type="button" class="btn btn-dark"
+								style="display: none;">Cancel</button>
+						</div>
+					</form>
+
+					<div class="row">
+						<p id="success" style="display: none; margin-top: 2vh;"
+							class="alert alert-success">Update Successful! Please login
+							again for changes to take effect</p>
+						<p id="failure" style="display: none; margin-top: 2vh;"
+							class="alert alert-danger"></p>
+					</div>
+				</div>
 			</div>
-			<div class="row"></div>
-	<div class="col-6">
+			<div class="row" style="margin-top: 4vh;"></div>
+			<div class="col-11">
+				<div class="row">
+					<div class="col-6">
+
+						<h2>Game Outcomes</h2>
+
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th style="width: 40%">Game Style</th>
+									<th style="width: 15%">Total</th>
+									<th style="width: 15%">Wins</th>
+									<th style="width: 15%">Draws</th>
+									<th style="width: 15%">Losses</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="gameStyle : ${gameResults}">
+									<td th:text="${gameStyle.key}"></td>
+									<td th:text="${gameStyle.value[0]}"></td>
+									<td th:text="${gameStyle.value[1]} + ' %'"></td>
+									<td th:text="${gameStyle.value[2]} + ' %'"></td>
+									<td th:text="${gameStyle.value[3]} + ' %'"></td>
+								</tr>
+							</tbody>
 
 
+						</table>
+					</div>
+					<div class="col-6" th:if="${password} == null">
+
+						<h2 th:text="'You VS '+${username}"></h2>
+
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th style="width: 40%">Game Style</th>
+									<th style="width: 15%">Total</th>
+									<th style="width: 15%">Wins</th>
+									<th style="width: 15%">Draws</th>
+									<th style="width: 15%">Losses</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="game : ${matchResults}">
+									<td th:text="${game.key}"></td>
+									<td th:text="${game.value[0]}"></td>
+									<td th:text="${game.value[1]} + ' %'"></td>
+									<td th:text="${game.value[2]} + ' %'"></td>
+									<td th:text="${game.value[3]} + ' %'"></td>
+								</tr>
+							</tbody>
 
 
-			<h2>Game Outcomes</h2>
-
-			<table class="table table-striped">
-				<thead>
-					<tr>
-						<th>Game Style</th>
-						<th>Total</th>
-						<th>Wins</th>
-						<th>Draws</th>
-						<th>Losses</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr th:each="gameStyle : ${gameResults}">
-						<td th:text="${gameStyle.key}"></td>
-						<td th:text="${gameStyle.value[0]}"></td>
-						<td th:text="${gameStyle.value[1]}"></td>
-						<td th:text="${gameStyle.value[2]}"></td>
-						<td th:text="${gameStyle.value[3]}"></td>
-					</tr>
-				</tbody>
-
-
-			</table>
-		</div>	</div>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
 	</main>
+	<script src="JS/profileAJAX.js"></script>
 </body>
 </html>
