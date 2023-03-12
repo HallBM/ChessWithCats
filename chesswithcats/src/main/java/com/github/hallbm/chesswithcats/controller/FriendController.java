@@ -127,14 +127,20 @@ public class FriendController {
 
 	@ResponseBody
 	@PostMapping("/friendrequest/block/{username}")
-	public ModelAndView blockFriendRequest(Model model, @PathVariable("username") String sender,
+	public ModelAndView blockFriendRequest(Model model, @PathVariable("username") String username1,
 			@AuthenticationPrincipal Player currentUser) {
 
-		String receiver = currentUser.getUsername();
+		String currentUsername = currentUser.getUsername();
 
-		FriendRequest blockedFriendReq = friendReqRepo.findByReceiverUsernameAndSenderUsername(receiver, sender);
+		FriendRequest blockedFriendReq = friendReqRepo.getFriendshipByUsernames(username1, currentUsername);
 		blockedFriendReq.setStatus(FriendRequestStatus.BLOCKED);
-		blockedFriendReq.setBlockedBy(BlockedBy.RECEIVER);
+		
+		if (blockedFriendReq.getSender().getUsername().equals(currentUsername)) {
+			blockedFriendReq.setBlockedBy(BlockedBy.SENDER);
+		} else {
+			blockedFriendReq.setBlockedBy(BlockedBy.RECEIVER);
+		}
+			
 		blockedFriendReq.setLastModifiedDate(LocalDate.now());
 		friendReqRepo.save(blockedFriendReq);
 
