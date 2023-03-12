@@ -1,7 +1,6 @@
 package com.github.hallbm.chesswithcats.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
 import com.github.hallbm.chesswithcats.dto.MoveDTO;
@@ -33,8 +33,6 @@ import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.FriendServices;
 import com.github.hallbm.chesswithcats.service.GamePlayServices;
 import com.github.hallbm.chesswithcats.service.GameServices;
-
-import jakarta.transaction.Transactional;
 
 @Controller
 public class GameController {
@@ -78,8 +76,6 @@ public class GameController {
 	@PostMapping("/gameRequest")
 	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq, BindingResult result, @AuthenticationPrincipal Player currentUser) {
 
-		//catch: TODO existsBySenderUsernameAndReceiverUsernameAndStyle(String sender, String receiver, GameStyle style);
-
 		GameRequest newReq = new GameRequest();
 
 		Player sender = playerRepo.findByUsername(currentUser.getUsername());
@@ -116,11 +112,18 @@ public class GameController {
 	public String forfeit(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 
 		gameServ.forfeitGame(Long.parseLong(id), currentUser.getUsername());
+		
 		return "redirect:/games";
 	}
 
-	@Modifying
-	@Transactional
+	@PostMapping("/game/draw/{id}")
+	public String initiateDraw(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
+
+		gameServ.drawGame(Long.parseLong(id), currentUser.getUsername());
+		
+		return "redirect:/games";
+	}
+	
 	@PostMapping("/gameRequest/accept/{id}/{style}/{opponent}")
 	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent, @AuthenticationPrincipal Player currentUser) {
 
@@ -164,10 +167,9 @@ public class GameController {
 		model.addAttribute("blackPlayer", game.getBlack().getUsername());
 		model.addAttribute("whiteOnline", game.getWhite().isLogged());
 		model.addAttribute("blackOnline", game.getBlack().isLogged());
+		model.addAttribute("moves", game.getGamePlay().getMoveString());
+		model.addAttribute("moves2", game.getGamePlay().getMoves().toString());
 
-		System.out.println(game.getWhite().isLogged());
-		System.out.println(game.getBlack().isLogged());
-		
 		return "chessboard";
 	}
 
@@ -177,9 +179,22 @@ public class GameController {
 		GamePlay gamePlay = gamePlayRepo.findByGameId(Long.parseLong(moveDTO.getGameId()));
 	
 		MoveResponseDTO moveResponseDTO = gamePlayServ.validateMove(moveDTO, gamePlay).orElse(new MoveResponseDTO());
+		
 		if (moveResponseDTO.isValid()) {
 			gamePlayServ.finalizeAndSaveGameState(moveDTO, moveResponseDTO, gamePlay);
 		} 
+		
+		//TODO: POC: check ==> checkmate; update with real implementation of checking checkmate/stalemate
+		
+		if(moveResponseDTO.getGameOutcome() == GameOutcome.CHECKMATE) {
+			Game activeGame = gamePlay.getGame();
+			activeGame.setOutcome(moveResponseDTO.getGameOutcome());
+			activeGame.setWinner(gamePlay.getHalfMoves() % 2 == 0 ? activeGame.getWhite().getUsername() : activeGame.getBlack().getUsername());
+			activeGame.setMoves(activeGame.getGamePlay().getMoveString());
+			activeGame.setGamePlay(null);
+			gameRepo.save(activeGame);
+		}
+	
 		
 		return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.OK);
 	}
