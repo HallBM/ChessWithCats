@@ -2,6 +2,8 @@ package com.github.hallbm.chesswithcats.service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,6 @@ import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameWLD;
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameWinner;
 import com.github.hallbm.chesswithcats.dto.GameDTO;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
 import com.github.hallbm.chesswithcats.model.Game;
@@ -42,60 +43,55 @@ public class GameServices {
 
 	@Autowired
 	private GamePlayServices gamePlayServ;
-	
-	@Transactional
-	public List<GameRequestDTO> getReceivedGameRequestDTOs (String username) {
+
+	public List<GameRequestDTO> getReceivedGameRequestDTOs(String username) {
 		List<GameRequest> receivedList = gameReqRepo.findByReceiverUsernameOrderByStyleAscCreatedAtDesc(username);
-		List<GameRequestDTO> receivedListDTO =
-				receivedList.stream().map(game -> createGameRequestDTO(game, username)).collect(Collectors.toList());
+		List<GameRequestDTO> receivedListDTO = receivedList.stream().map(game -> createGameRequestDTO(game, username))
+				.collect(Collectors.toList());
 		return receivedListDTO;
 	}
-	
-	@Transactional
-	public List<GameRequestDTO> getSentGameRequestDTOs (String username) {
+
+	public List<GameRequestDTO> getSentGameRequestDTOs(String username) {
 		List<GameRequest> pendingList = gameReqRepo.findBySenderUsernameOrderByStyleAscCreatedAtDesc(username);
-		List<GameRequestDTO> pendingListDTO =
-				pendingList.stream().map(game -> createGameRequestDTO(game, username)).collect(Collectors.toList());
+		List<GameRequestDTO> pendingListDTO = pendingList.stream().map(game -> createGameRequestDTO(game, username))
+				.collect(Collectors.toList());
 		return pendingListDTO;
 	}
-	
-	@Transactional
-	public List<GameDTO> getActiveGameDTOs (String username) {
-		List<Game> activeList = gameRepo.findActiveByUsername(username);
-		List<GameDTO> activeListDTO =
-				activeList.stream().map(game -> createGameDTO(game, username)).collect(Collectors.toList());
+
+	public List<GameDTO> getActiveGameDTOs(String username) {
+		List<Game> activeList = gameRepo.getActiveByUsername(username);
+		List<GameDTO> activeListDTO = activeList.stream().map(game -> createGameDTO(game, username))
+				.collect(Collectors.toList());
 		return activeListDTO;
 	}
-	
-	@Transactional
-	public List<GameDTO> getCompletedGameDTOs (String username) {
-		List<Game> completedList = gameRepo.findCompleteByUsername(username);
-		List<GameDTO> completedListDTO =
-				completedList.stream().map(game -> createGameDTO(game, username)).collect(Collectors.toList());
+
+	public List<GameDTO> getCompletedGameDTOs(String username) {
+		List<Game> completedList = gameRepo.getCompleteByUsername(username);
+		List<GameDTO> completedListDTO = completedList.stream().map(game -> createGameDTO(game, username))
+				.collect(Collectors.toList());
 		return completedListDTO;
 	}
-	
-	@Transactional
-	public GameRequestDTO createGameRequestDTO (GameRequest gameReq, String username) {
+
+	public GameRequestDTO createGameRequestDTO(GameRequest gameReq, String username) {
 
 		GameRequestDTO gameReqDTO = new GameRequestDTO();
 		gameReqDTO.setId(String.valueOf(gameReq.getId()));
 		gameReqDTO.setTime(gameReq.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a")));
-		gameReqDTO.setOpponent(username.equals(gameReq.getSender().getUsername()) ? gameReq.getReceiver().getUsername() : gameReq.getSender().getUsername());
+		gameReqDTO.setOpponent(username.equals(gameReq.getSender().getUsername()) ? gameReq.getReceiver().getUsername()
+				: gameReq.getSender().getUsername());
 		gameReqDTO.setStyle(gameReq.getStyle());
 		return gameReqDTO;
 	}
 
-	@Transactional
-	public GameDTO createGameDTO (Game game, String username) {
+	public GameDTO createGameDTO(Game game, String username) {
 
 		if (game == null) {
 			return null;
 		}
-		
+
 		GameDTO gameDTO = new GameDTO();
 		boolean isCurrentWhite = username.equals(game.getWhite().getUsername());
-		gameDTO.setId(String.format("%06d",game.getId()));
+		gameDTO.setId(String.format("%06d", game.getId()));
 		gameDTO.setColor(isCurrentWhite ? GameColor.WHITE : GameColor.BLACK);
 		gameDTO.setOpponent(isCurrentWhite ? game.getBlack().getUsername() : game.getWhite().getUsername());
 		gameDTO.setStyle(game.getStyle());
@@ -104,18 +100,15 @@ public class GameServices {
 			boolean isWhiteTurn = game.getGamePlay().getHalfMoves() % 2 == 1 ? true : false;
 			gameDTO.setTurn((isCurrentWhite == isWhiteTurn) ? "YOURS" : "THEIRS");
 		} else {
-			if (game.getWinner() == GameWinner.DRAW) {
+			if (game.getWinner().equals("Draw")) {
 				gameDTO.setWinLoseDraw(GameWLD.DRAW);
-			} else if (isCurrentWhite) {
-				gameDTO.setWinLoseDraw(game.getWinner() == GameWinner.WHITE ? GameWLD.WIN : GameWLD.LOSE);
 			} else {
-				gameDTO.setWinLoseDraw(game.getWinner() != GameWinner.WHITE ? GameWLD.WIN : GameWLD.LOSE);
+				gameDTO.setWinLoseDraw(game.getWinner().equals(username) ? GameWLD.WIN : GameWLD.LOSE);
 			}
 		}
 		return gameDTO;
 	}
 
-	@Transactional
 	public Player findRandomOpponent(Player sender, GameStyle style) {
 
 		List<Player> potentialOpponent = playerRepo.findTop20ByIsLoggedAndIsPlayingOrderByLastLoginDesc(true, false)
@@ -127,13 +120,12 @@ public class GameServices {
 
 		potentialOpponent.remove(sender);
 
-        Random rand = new Random();
-        int randIndex = rand.nextInt(potentialOpponent.size());
-        return potentialOpponent.get(randIndex);
+		Random rand = new Random();
+		int randIndex = rand.nextInt(potentialOpponent.size());
+		return potentialOpponent.get(randIndex);
 	}
 
 	@Modifying
-	@Transactional
 	public void forfeitGame(Long id, String username) {
 		Game activeGame = gameRepo.findById(id).get();
 
@@ -141,7 +133,13 @@ public class GameServices {
 			gameRepo.delete(activeGame);
 		} else {
 			activeGame.setOutcome(GameOutcome.RESIGNATION);
-			activeGame.setWinner(activeGame.getWhite().getUsername().equals(username) ? GameWinner.BLACK : GameWinner.WHITE);
+
+			if (activeGame.getWhite().getUsername().equals(username)) {
+				activeGame.setWinner(activeGame.getBlack().getUsername());
+			} else {
+				activeGame.setWinner(activeGame.getWhite().getUsername());
+			}
+
 			activeGame.setMoves(activeGame.getGamePlay().getMoveString());
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
@@ -149,7 +147,16 @@ public class GameServices {
 	}
 
 	@Modifying
-	@Transactional
+	public void drawGame(Long id, String username) {
+		Game activeGame = gameRepo.findById(id).get();
+		activeGame.setOutcome(GameOutcome.AGREEMENT);
+		activeGame.setWinner("Draw");
+		activeGame.setMoves(activeGame.getGamePlay().getMoveString());
+		activeGame.setGamePlay(null);
+		gameRepo.save(activeGame);
+	}
+
+	@Modifying
 	public Game createGameFromRequest(Long requestId, GameStyle style, String opponentUsername) {
 
 		Game newGame = new Game();
@@ -169,7 +176,7 @@ public class GameServices {
 		}
 
 		// only include if opponent is not human: newGame.setOpponentIsHuman(false);
-		
+
 		GameBoardServices.setupGameBoard(newGame);
 		String openingFen = newGame.getGamePlay().updateFenSet();
 		newGame.setOpeningFen(openingFen);
@@ -180,35 +187,91 @@ public class GameServices {
 		return newGame;
 	}
 
-	@Transactional
-	public Map<GameStyle, Integer[]> getWinLoseDrawByPlayer (String username){
+	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByPlayer(String username) {
+		return getWinDrawLosePercentage(gameRepo.getCompleteByUsernameOrderByStyle(username), username);
+	}
+
+	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByOpponents(String currentUsername, String username2) {
+		return getWinDrawLosePercentage(gameRepo.getCompleteByOpponentsOrderByStyle(currentUsername, username2),
+				currentUsername);
+	}
+
+	public Map<GameStyle, Integer[]> getWinDrawLosePercentage(List<Game> databaseResults, String currentUsername) {
+
 		Map<GameStyle, Integer[]> stats = new HashMap<>();
 
-		for(GameStyle gs : GameStyle.values()) {
-			stats.put(gs,new Integer[] {0,0,0,0}); //TWLD
+		for (GameStyle gs : GameStyle.values()) {
+			stats.put(gs, new Integer[] { 0, 0, 0, 0 }); // TWDL
 		}
-		
-		List<Game> databaseResults = gameRepo.findCompleteByUsername(username);
-		
 		for (Game game : databaseResults) {
 			GameStyle gs = game.getStyle();
 			stats.get(gs)[0] += 1;
-			if (game.getWinner() == GameWinner.DRAW) {
-				stats.get(gs)[3] += 1;
-			} else if (game.getWinner() == GameWinner.WHITE) {
-				if (game.getWhite().getUsername().equals(username)) {
-					stats.get(gs)[1] += 1;
-				}else {
-					stats.get(gs)[2] += 1;
-				}
+			if (game.getWinner().equals("Draw")) {
+				stats.get(gs)[2] += 1;
+			} else if (game.getWinner().equals(currentUsername)) {
+				stats.get(gs)[1] += 1;
 			} else {
-				if (game.getBlack().getUsername().equals(username)) {
-					stats.get(gs)[1] += 1;
-				}else {
-					stats.get(gs)[2] += 1;
-				}
+				stats.get(gs)[3] += 1;
 			}
 		}
+
+		for (GameStyle gs : stats.keySet()) {
+			if (stats.get(gs)[0] == 0) {
+				continue;
+			}
+			stats.get(gs)[1] = Math.round((float) stats.get(gs)[1] / (float) stats.get(gs)[0] * 100);
+			stats.get(gs)[2] = Math.round((float) stats.get(gs)[2] / (float) stats.get(gs)[0] * 100);
+			stats.get(gs)[3] = Math.round((float) stats.get(gs)[3] / (float) stats.get(gs)[0] * 100);
+		}
 		return stats;
-	} 
+	}
+
+	public List<Object[]> getTopPlayers(GameStyle style) {
+		List<Game> games = gameRepo.getWonOrLostGamesByStyle(style.toString()).orElse(null);
+
+		if (games == null) {
+			return null;
+		}
+
+		Map<String, Integer> rankMap = new HashMap<>();
+
+		for (Game game : games) {
+			String white = game.getWhite().getUsername();
+			String black = game.getBlack().getUsername();
+			String winner = game.getWinner();
+
+			rankMap.putIfAbsent(white, 0);
+			rankMap.putIfAbsent(black, 0);
+
+			if (white.equals(winner)) {
+				rankMap.put(white, rankMap.get(white) + 1);
+				rankMap.put(black, rankMap.get(black) - 1);
+			} else if (black.equals(winner)) {
+				rankMap.put(white, rankMap.get(white) - 1);
+				rankMap.put(black, rankMap.get(black) + 1);
+			} else {
+
+			}
+		}
+
+		List<Map.Entry<String, Integer>> top5Players = new ArrayList<>(rankMap.entrySet());
+
+		Collections.sort(top5Players, new Comparator<Map.Entry<String, Integer>>() {
+			@Override
+			public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
+				return o2.getValue().compareTo(o1.getValue());
+			}
+		});
+
+		List<Object[]> ranking = new ArrayList<>();
+
+		int index = 0;
+		for (Map.Entry<String, Integer> rank : top5Players.subList(0, Math.min(top5Players.size(), 5))) {
+			index++;
+			ranking.add(new Object[] { index, rank.getKey(), rank.getValue() });
+		}
+
+		return ranking;
+
+	}
 }
