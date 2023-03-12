@@ -26,7 +26,6 @@ import com.github.hallbm.chesswithcats.service.PlayerServices;
 import jakarta.validation.Valid;
 
 @Controller
-@CrossOrigin(origins = "http://localhost:8080")
 public class UserController {
 
 	@Autowired
