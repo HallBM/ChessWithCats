@@ -79,10 +79,10 @@ public class GamePlay {
 	private String moveString = new String();
 
 	public String updateFenSet() {
-		String fen = gameBoard.getFenPositions() + " " + (getHalfMoves() % 2 == 1 ? "w" : "b") + " "
-				+ (getCastling().equals("") ? "-" : getCastling()) + " "
-				+ (getEnPassantTargetSquare() == null ? "-" : getEnPassantTargetSquare()) + " "
-				+ String.valueOf(getFiftyMoveClock()) + " " + String.valueOf((getHalfMoves() - 1) / 2 + 1);
+		String fen = gameBoard.getFenPositions() + " " + (halfMoves % 2 == 1 ? "w" : "b") + " "
+				+ (castling.equals("") ? "-" : castling) + " "
+				+ (enPassantTargetSquare == null ? "-" : enPassantTargetSquare) + " "
+				+ String.valueOf(fiftyMoveClock) + " " + String.valueOf((halfMoves - 1) / 2 + 1);
 		fenSet.add(fen);
 		return fen;
 	}
@@ -100,8 +100,13 @@ public class GamePlay {
 	}
 
 	public void addMove(String newMove) {
+
 		moveString += newMove;
 		moves.append(newMove);
+		
+		
+		
+		
 	}
 
 	public void removeCastling(String castle) {
