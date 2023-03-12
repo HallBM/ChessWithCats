@@ -2,11 +2,22 @@
 body{
     padding:0;
     margin:0;
-    background-color:rgb(119, 119, 119);
+    background-color:#a6b4bd;
     font-family: arial, sans-serif;
     height: 100vh;
     overflow:hidden;
     user-select: none;
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 40vw;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border-radius: 10px;
+  border: 10px solid limegreen;
 }
 
 .info-panel{
@@ -29,7 +40,7 @@ body{
 }
 
 .top{
-    font-size: 2.5vw;
+    font-size: 2.2vw;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -46,6 +57,7 @@ a img {
     aspect-ratio:1/1;
     max-height: 40px;
     margin-right: 2vw;
+    margin-bottom: 1.6vh;
 }
 
 #game-number{
@@ -53,7 +65,7 @@ a img {
 }
 
 #turn{
-    height: 8vh;
+    height: 6vh;
     color: rgb(230, 230, 230);
     display: flex;
     align-items: center;
@@ -64,7 +76,7 @@ a img {
 
 #turn-text, .players{
     margin-left: 2vw;
-    font-size: 2.3vw;
+    font-size: 2vw;
 }
 
 .white-player, .black-player{
@@ -76,12 +88,12 @@ a img {
 }
 
 #turn-color{
-    height: 40%;
+    height: 50%;
     aspect-ratio: 1/1;
     border: 1px solid black;
     background-color: white;
     border-radius: 5px;
-    margin: 0 0 0 2.3vw;
+    margin: 0.7vh 0.3vw 0 2.3vw;
 }
 
 .timers{
@@ -89,7 +101,8 @@ a img {
 }
 
 .move-history{
-    height: 32vh;
+    height: 53vh;
+    font-size: 1.5vw;
 }
 
 .captured-pieces{
@@ -101,7 +114,7 @@ a img {
     margin: 0;
     max-width: 100%;
     height: 100%;
-    background-color:#3988c25c;
+    background-color:#92a6b3;
     display: flex;
 }
 
@@ -215,3 +228,18 @@ a img {
 .piece.dragging {
   transform: none !important;
 }
+
+.no-cursor:hover{
+	cursor: default;
+}
+
+.strike-through{
+	text-decoration: line-through;
+}
+
+#buttons{
+	border: 0;
+    margin: 2.1vh;
+    background-color: transparent;
+}
+

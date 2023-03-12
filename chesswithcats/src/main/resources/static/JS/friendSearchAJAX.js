@@ -34,15 +34,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 	</td>
                 	<td>
                 		<form action="/friendrequest/send/` + player + `" method="POST">
-                			<button type="submit" name="selectedName" value="` + player + `" style="font-size:1vw; color:green">Request 
-                				<i class="fas fa-user-check" style="color:green"></i>
+                			<button type="submit" name="selectedName" value="` + player + `" class="btn btn-success">Request 
                 			</button>
                 		</form>
                 	</td>
                 	<td>
                 		<form action="/block/` + player + `" method="POST">
-                			<button type="submit" name="selectedName" value="` + player + `" style="font-size:1vw; color:red">Block User 
-                				<i class="fas fa-user-slash" style="color:red"></i>
+                			<button type="submit" name="selectedName" value="` + player + `" class="btn btn-danger">Block User 
                 			</button>
                 		</form>
                 	</td>
