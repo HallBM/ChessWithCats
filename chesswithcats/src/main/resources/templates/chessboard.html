@@ -18,7 +18,7 @@
 </head>
 
 <body>
-	<div class="background">
+	<div id="background" class="background">
 		<div class="gameboard">
 			<div id="chessboard" th:class="${color}">
 				<div id="pieceMapJson" th:text="${pieceMapJson}"
@@ -33,26 +33,63 @@
 
 				<div th:text="'Game #'+${id}"></div>
 			</div>
-			<div id="turn" th:classappend="${turn}">
-				<div id="turn-color"></div>
-				<div id="turn-text"
-					th:text="${turn == 'black-turn'} ? 'Black to Move' : 'White to Move'">
-					White to Move</div>
+			<div class="players"
+				style="display: flex; flex-direction: column; align-content: center">
+				<div id="turn" th:classappend="${turn}">
+					<div id="turn-color"></div>
+					<div id="turn-text"
+						th:text="${turn == 'black-turn'} ? 'Black to Move' : 'White to Move'">
+						White to Move</div>
+				</div>
+				<div class="container btn btn-light white-player no-cursor"
+					style="width: 90%">
+					<strong><span style="font-size: 2vw;" th:text="${whitePlayer}"></span></strong><i
+						th:if="${whiteOnline}"
+						style="font-size: 2vw; color: green; margin-left: 2vw"
+						class="fa fa-user-circle"></i>
+				</div>
+				<div class="container btn btn-dark black-player no-cursor"
+					style="margin-top: -1vh; width: 90%">
+					<strong><span style="font-size: 2vw;" th:text="${blackPlayer}"></span></strong><i
+						th:if="${blackOnline}"
+						style="font-size: 2vw; color: green; margin-left: 2vw"
+						class="fa fa-user-circle"></i>
+				</div>
+
 			</div>
-			<div class="players">
-				Players
-				<div class="container white-player"><span th:text="'WHITE: ' + ${whitePlayer}"></span><i th:if="${whiteOnline}" style="font-size: 2vw; color: green; margin-left:1vw" class="fa fa-user-circle"></i></div>
-				<div class="container black-player"><span th:text="'BLACK: ' + ${blackPlayer}"></span><i th:if="${blackOnline}" style="font-size: 2vw; color: green; margin-left:1vw" class="fa fa-user-circle"></i></div>
-		
+			
+			<div id="rules" class="rule-display" style="overflow: auto; display: block; font-size: 2vw; background-color: lightblue">
+				<strong>&nbsp;&nbsp;Rules</strong>
+				<p id="rule-display" style="font-size: 2.5vh; padding: 0vh 1vw; font-weight: bold;"></p>
+			</div>
+			
+			<div id="history" class="move-history" style="overflow: auto; display: none;">
+				&nbsp;&nbsp;Moves
+				<p id="move-display" style="font-size: 2vh; padding: 0vh 1vw" th:text="${moves}"></p>
 			</div>
 
-			<div class="move-history">Moves</div>
-
-			<div class="captured-pieces">Captured Pieces</div>
+			<!-- <div class="captured-pieces">Captured Pieces -->
+			<div id="buttons" style="display: flex; justify-content: space-around">
+				<form style="width: 40%;" th:action="@{'/game/draw/' + ${id}}"
+					method="post">
+					<button style="width: 100%;" type="submit" class="btn btn-warning"><strong>DRAW</strong></button>
+				</form>
+				<form style="width: 40%;" th:action="@{'/game/forfeit/' + ${id}}"
+					method="post">
+					<button style="width: 100%;" type="submit" class="btn btn-danger"><strong>RESIGN</strong></button>
+				</form>
+			</div>
 
 		</div>
+
 	</div>
 
+<div id="checkmate-popup" class="popup" style="display: none; justify-content: center; flex-direction: column;
+    align-items: center;">
+		<img src="/Images/large_img_catsplayingchess/felix-mittermeier-nAjil1z3eLk-unsplash.jpg" style="width: 100%">
+		<span style="font-size: 3vw"><strong>Checkmate! You win!</strong></span>
+		
+</div>
 
 	<script th:src="@{/JS/chessboard.js}"></script>
 
