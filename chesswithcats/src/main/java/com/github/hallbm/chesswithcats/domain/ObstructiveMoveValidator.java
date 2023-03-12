@@ -43,7 +43,7 @@ public class ObstructiveMoveValidator extends MoveValidator{
 
 		// modified rules allowing only pawns to jump forward over obstructive cats 
 		if (absColDisp == 0 && absRowDisp == 2) {
-			if (board[startRow+(isWhite ? -1 : 1)][startCol] == PieceNotation.C) {
+			if (mockBoard[startRow+(isWhite ? -1 : 1)][startCol] == PieceNotation.C && attackedPiece == null) {
 				moveResponseDTO.addChessMove(ChessMove.SIMPLE_MOVE);
 			} else if ((startRow == 1 || startRow == 6) && attackedPiece == null) {
 				moveResponseDTO.addChessMove(ChessMove.SIMPLE_MOVE);

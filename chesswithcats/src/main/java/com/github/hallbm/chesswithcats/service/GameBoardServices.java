@@ -1,5 +1,6 @@
 package com.github.hallbm.chesswithcats.service;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,6 +137,37 @@ public final class GameBoardServices {
 		}
 	}
 
+	public static void movePiece(PieceNotation[][] board, List<String[]> moves, String promotionPiece) {
+		int start_row;
+		int start_col;
+		int end_row;
+		int end_col;
+
+		for (String[] move : moves) {
+			start_row = getRow(move[0]);
+			start_col = getColumn(move[0]);
+
+			if (move[1] == null) { // en passant captured piece
+				board[start_row][start_col] = null;
+				continue;
+			}
+
+			end_row = getRow(move[1]);
+			end_col = getColumn(move[1]);
+
+			if (promotionPiece != null) {
+				board[end_row][end_col] = null;
+				board[end_row][end_col] = PieceNotation.valueOf(promotionPiece);
+				board[start_row][start_col] = null;
+
+			} else {
+				board[end_row][end_col] = null;
+				board[end_row][end_col] = board[start_row][start_col];
+				board[start_row][start_col] = null;
+			}
+		}
+	}
+	
 	public static void movePiece(GameBoard board, List<String[]> moves, String promotionPiece) {
 		int start_row;
 		int start_col;
@@ -184,4 +216,19 @@ public final class GameBoardServices {
 		return new int[]{-1, -1};
 	}
 
+	public static PieceNotation[][] copyBoard(PieceNotation[][] board){
+		PieceNotation[][] newBoard = new PieceNotation[8][];
+		
+		for (int i =0; i<8; i++) {
+			newBoard[i] = Arrays.copyOf(board[i], 8);
+		}
+		
+		for (int i =0; i<8; i++) {
+			for (int j=0; j<8; j++) {
+				System.out.println(board[i][j] != null ? (board[i][j].toString() + newBoard[i][j].toString()) : "empty");
+			}
+		}
+		
+		return newBoard;
+	}
 }

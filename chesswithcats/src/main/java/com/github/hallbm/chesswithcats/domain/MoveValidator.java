@@ -2,6 +2,7 @@ package com.github.hallbm.chesswithcats.domain;
 
 import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceNotation;
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceType;
 import com.github.hallbm.chesswithcats.dto.MoveDTO;
@@ -19,7 +20,7 @@ public class MoveValidator {
 	protected int startRow, endRow, startCol, endCol;
 	protected int colDisplacement, rowDisplacement, absRowDisp, absColDisp;
 
-	protected PieceNotation[][] board;
+	protected PieceNotation[][] mockBoard;
 	protected PieceNotation movedPiece, attackedPiece;
 	protected boolean isWhite;
 
@@ -34,9 +35,9 @@ public class MoveValidator {
 		startCol = GameBoardServices.getColumn(startPos);
 		endCol = GameBoardServices.getColumn(endPos);
 
-		board = gamePlay.getGameBoard().getBoard();
-		movedPiece = board[startRow][startCol];
-		attackedPiece = board[endRow][endCol];
+		mockBoard = GameBoardServices.copyBoard(gamePlay.getGameBoard().getBoard());
+		movedPiece = mockBoard[startRow][startCol];
+		attackedPiece = mockBoard[endRow][endCol];
 		isWhite = movedPiece.getColor() == GameColor.WHITE;
 	
 
@@ -77,8 +78,8 @@ public class MoveValidator {
 		}
 		
 		generateMoveResponse();
-		//make move: can't! move isn't persisted
-		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), moveDTO.getPromotionPiece());
+
+		GameBoardServices.movePiece(mockBoard, moveResponseDTO.getPieceMoves(), moveDTO.getPromotionPiece());
 
 		if (!checkNotInCheck(isWhite ? GameColor.WHITE : GameColor.BLACK)) {
 			return null;
@@ -87,14 +88,19 @@ public class MoveValidator {
 		moveResponseDTO.setChecked(!checkNotInCheck(isWhite ? GameColor.BLACK : GameColor.WHITE));
 		generateOfficialMove();
 
-		//TODO check checkmate, stalemate, update DTO, update official move #
-
+		//TODO check checkmate, stalemate, update DTO, update official move #; check => checkmate as POC
+		if (moveResponseDTO.isChecked()) {
+			moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE);
+		}
+		
+		
+		
 		return moveResponseDTO;
 	}
 
 	protected boolean navigateRight() {
 		for (int i = 1; i < absColDisp; i++) {
-			if (board[startRow][startCol + i] != null) {
+			if (mockBoard[startRow][startCol + i] != null) {
 				return false;
 			}
 		}
@@ -103,7 +109,7 @@ public class MoveValidator {
 
 	protected boolean navigateLeft() {
 		for (int i = 1; i < absColDisp; i++) {
-			if (board[startRow][startCol - i] != null) {
+			if (mockBoard[startRow][startCol - i] != null) {
 				return false;
 			}
 		}
@@ -112,7 +118,7 @@ public class MoveValidator {
 
 	protected boolean navigateUp() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow - i][startCol] != null) {
+			if (mockBoard[startRow - i][startCol] != null) {
 				return false;
 			}
 		}
@@ -121,7 +127,7 @@ public class MoveValidator {
 
 	protected boolean navigateDown() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow + i][startCol] != null) {
+			if (mockBoard[startRow + i][startCol] != null) {
 				return false;
 			}
 		}
@@ -130,7 +136,7 @@ public class MoveValidator {
 
 	protected boolean navigateUpperRight() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow - i][startCol + i] != null) {
+			if (mockBoard[startRow - i][startCol + i] != null) {
 				return false;
 			}
 		}
@@ -139,7 +145,7 @@ public class MoveValidator {
 
 	protected boolean navigateLowerRight() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow + i][startCol + i] != null) {
+			if (mockBoard[startRow + i][startCol + i] != null) {
 				return false;
 			}
 		}
@@ -148,7 +154,7 @@ public class MoveValidator {
 
 	protected boolean navigateUpperLeft() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow - i][startCol - i] != null) {
+			if (mockBoard[startRow - i][startCol - i] != null) {
 				return false;
 			}
 		}
@@ -157,7 +163,7 @@ public class MoveValidator {
 
 	protected boolean navigateLowerLeft() {
 		for (int i = 1; i < absRowDisp; i++) {
-			if (board[startRow + i][startCol - i] != null) {
+			if (mockBoard[startRow + i][startCol - i] != null) {
 				return false;
 			}
 		}
@@ -362,13 +368,13 @@ public class MoveValidator {
 			}
 			if (colDirection == -1) {
 				for (int i = 1; i <= 3; i++) {
-					if (board[startRow][startCol - i] != null) {
+					if (mockBoard[startRow][startCol - i] != null) {
 						return false;
 					}
 				}
 			} else if (colDirection == 1) {
 				for (int i = 1; i <= 2; i++) {
-					if (board[startRow][startCol + i] != null) {
+					if (mockBoard[startRow][startCol + i] != null) {
 						return false;
 					}
 				}
@@ -406,22 +412,30 @@ public class MoveValidator {
 	}
 
 	protected void generateOfficialMove() {
+		String move = ""; 
+				
+		if (gamePlay.getHalfMoves() % 2 == 1) {
+			move += String.valueOf((gamePlay.getHalfMoves() - 1) / 2 + 1) + ".";
+		}
+		
 		if (moveResponseDTO.getChessMoves().contains(ChessMove.KING_SIDE_CASTLE)) {
-			moveResponseDTO.setOfficialChessMove("O-O" + (moveResponseDTO.isChecked() ? "+ " : " "));
-		} else if (moveResponseDTO.getChessMoves().contains(ChessMove.KING_SIDE_CASTLE)) {
-			moveResponseDTO.setOfficialChessMove("O-O-O" + (moveResponseDTO.isChecked() ? "+ " : " "));
+			move += "O-O" + (moveResponseDTO.isChecked() ? "+ " : " ");
+		} else if (moveResponseDTO.getChessMoves().contains(ChessMove.QUEEN_SIDE_CASTLE)) {
+			move += "O-O-O" + (moveResponseDTO.isChecked() ? "+ " : " ");
 		} else {
-			moveResponseDTO.setOfficialChessMove(movedPiece.toString() + startPos.toLowerCase()
+			move += movedPiece.toString() + startPos.toLowerCase()
 					+ (moveResponseDTO.getChessMoves().contains(ChessMove.CAPTURE) ? "x" : "") + endPos.toLowerCase()
 					+ (moveResponseDTO.getChessMoves().contains(ChessMove.EN_PASSANT) ? "ep" : "")
 					+ (moveDTO.getPromotionPiece() != null ? "=" + moveDTO.getPromotionPiece().toString() : "")
-					+ (moveResponseDTO.isChecked() ? "+ " : " "));
+					+ (moveResponseDTO.isChecked() ? "+ " : " ");
 		}
+		
+		moveResponseDTO.setOfficialChessMove(move);
 	}
 
 	protected boolean checkNotInCheck(GameColor kingColor) {
 		PieceNotation king = PieceNotation.valueOf(kingColor == GameColor.WHITE ? "K" : "k");
-		int[] kingPos = GameBoardServices.findKingPosition(board, king);
+		int[] kingPos = GameBoardServices.findKingPosition(mockBoard, king);
 
 		return checkNotInCheck(kingPos, kingColor);
 	}
@@ -448,7 +462,7 @@ public class MoveValidator {
 
 		for (int[] i : index) {
 			if ((r + i[0] >= 0) && (r + i[0] <= 7) && (c + i[1] >= 0) && (c + i[1] <= 7)) {
-				PieceNotation attackPiece = board[r + i[0]][c + i[1]];
+				PieceNotation attackPiece = mockBoard[r + i[0]][c + i[1]];
 				if (attackPiece != null && attackPiece.getColor() != kingColor
 						&& attackPiece.getType() == PieceType.KNIGHT) {
 					return false;
@@ -467,15 +481,16 @@ public class MoveValidator {
 			int count = 1;
 			while ((r + i[0] * count >= 0) && (r + i[0] * count <= 7) && (c + i[1] * count >= 0)
 					&& (c + i[1] * count <= 7)) {
-				PieceNotation attackPiece = board[r + i[0] * count][c + i[1] * count];
+				PieceNotation attackPiece = mockBoard[r + i[0] * count][c + i[1] * count];
 
 				if (attackPiece != null) {
 					boolean isNotSameColor = attackPiece.getColor() != kingColor;
 					boolean isQueenOrRook = attackPiece.getType() == PieceType.QUEEN
 							|| attackPiece.getType() == PieceType.ROOK;
-					boolean isKing = attackPiece.getType() == PieceType.KING;
+					boolean isCloseKing = (attackPiece.getType() == PieceType.KING)
+							&& ((Math.abs(i[0]*count) == 1) || (Math.abs(i[1] * count) == 1));
 
-					if (isNotSameColor && (isQueenOrRook || isKing)) {
+					if (isNotSameColor && (isQueenOrRook || isCloseKing)) {
 						return false;
 					} else {
 						break;
@@ -496,16 +511,17 @@ public class MoveValidator {
 			int count = 1;
 			while ((r + i[0] * count >= 0) && (r + i[0] * count <= 7) && (c + i[1] * count >= 0)
 					&& (c + i[1] * count <= 7)) {
-				PieceNotation attackPiece = board[r + i[0] * count][c + i[1] * count];
+				PieceNotation attackPiece = mockBoard[r + i[0] * count][c + i[1] * count];
 				if (attackPiece != null) {
 					boolean isNotSameColor = attackPiece.getColor() != kingColor;
 					boolean isQueenOrBishop = attackPiece.getType() == PieceType.QUEEN
 							|| attackPiece.getType() == PieceType.BISHOP;
-					boolean isKing = attackPiece.getType() == PieceType.KING;
+					boolean isCloseKing = (attackPiece.getType() == PieceType.KING)
+							&& ((Math.abs(i[0]*count) == 1) || (Math.abs(i[1] * count) == 1));
 					boolean isClosePawn = (attackPiece.getType() == PieceType.PAWN)
 							&& (r + (kingColor == GameColor.WHITE ? -1 : 1)) == (r + i[0] * count);
 
-					if (isNotSameColor && (isQueenOrBishop || isKing || isClosePawn)) {
+					if (isNotSameColor && (isQueenOrBishop || isCloseKing || isClosePawn)) {
 						return false;
 					} else {
 						break;

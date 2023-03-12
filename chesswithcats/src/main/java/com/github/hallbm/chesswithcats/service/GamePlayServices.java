@@ -1,5 +1,8 @@
 package com.github.hallbm.chesswithcats.service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +53,8 @@ public class GamePlayServices {
 	@Transactional
 	public void finalizeAndSaveGameState(MoveDTO moveDTO, MoveResponseDTO moveResponseDTO, GamePlay gamePlay) {
 		
+		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), moveDTO.getPromotionPiece());
+		
 		if (gamePlay.getHalfMoves() == 1) {
 			gamePlay.getGame().setOutcome(GameOutcome.INCOMPLETE);
 		}
@@ -66,6 +71,8 @@ public class GamePlayServices {
 		gamePlay.addMove(moveResponseDTO.getOfficialChessMove()); // updates move for both String and StringBuffer
 		gamePlay.incrementHalfMoves(); 
 		gamePlay.updateFenSet();
+	
 		gamePlayRepo.save(gamePlay);
 	}
+	
 }

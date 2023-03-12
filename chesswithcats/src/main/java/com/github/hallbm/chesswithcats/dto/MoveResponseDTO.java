@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
+import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,6 +21,7 @@ public class MoveResponseDTO {
 	private List<String[]> pieceMoves = new ArrayList<>();
 	private String officialChessMove = "";
 	private boolean isChecked;
+	private GameOutcome gameOutcome;
 
 	
 	public void addChessMove (ChessMove chessMove) {
