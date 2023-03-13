@@ -34,6 +34,8 @@ import com.github.hallbm.chesswithcats.service.FriendServices;
 import com.github.hallbm.chesswithcats.service.GamePlayServices;
 import com.github.hallbm.chesswithcats.service.GameServices;
 
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 public class GameController {
 
@@ -54,10 +56,10 @@ public class GameController {
 
 	@Autowired
 	private GamePlayServices gamePlayServ;
-	
+
 	@Autowired
 	private GamePlayRepository gamePlayRepo;
-	
+
 	@GetMapping("/games")
 	public String showGamesPage(Model model, @AuthenticationPrincipal Player currentUser) {
 
@@ -74,7 +76,8 @@ public class GameController {
 	}
 
 	@PostMapping("/gameRequest")
-	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq, BindingResult result, @AuthenticationPrincipal Player currentUser) {
+	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq,
+			BindingResult result, @AuthenticationPrincipal Player currentUser) {
 
 		GameRequest newReq = new GameRequest();
 
@@ -112,7 +115,7 @@ public class GameController {
 	public String forfeit(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 
 		gameServ.forfeitGame(Long.parseLong(id), currentUser.getUsername());
-		
+
 		return "redirect:/games";
 	}
 
@@ -120,46 +123,50 @@ public class GameController {
 	public String initiateDraw(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 
 		gameServ.drawGame(Long.parseLong(id), currentUser.getUsername());
-		
+
 		return "redirect:/games";
 	}
-	
+
 	@PostMapping("/gameRequest/accept/{id}/{style}/{opponent}")
-	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent, @AuthenticationPrincipal Player currentUser) {
+	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent,
+			@AuthenticationPrincipal Player currentUser) {
 
 		Game newGame = gameServ.createGameFromRequest(id, style, opponent);
-		return "redirect:/game/" +  newGame.getStyle().toString().toLowerCase() + "/" + String.format("%06d",newGame.getId());
+		return "redirect:/game/" + newGame.getStyle().toString().toLowerCase() + "/"
+				+ String.format("%06d", newGame.getId());
 	}
 
 	@GetMapping("/game/{style}/{id}")
-	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id, @AuthenticationPrincipal Player currentUser) {
+	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id,
+			@AuthenticationPrincipal Player currentUser) {
 		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
 
-		if(game == null) {
+		if (game == null) {
 			return "redirect:/games";
 		} else {
 			String playerColor = game.getWhite().getUsername().equals(currentUser.getUsername()) ? "white" : "black";
 			return "redirect:/game/" + style.toLowerCase() + "/" + id + "/" + playerColor;
 		}
 	}
-	
+
 	@GetMapping("/game/{style}/{id}/{color}")
-	public String enterGame(Model model, @PathVariable String style, @PathVariable String id, @PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
-		
+	public String enterGame(Model model, @PathVariable String style, @PathVariable String id,
+			@PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
+
 		Game game = gameRepo.findById(Long.parseLong(id)).orElse(null);
-		if(game == null || game.getWinner() != null) {
+		if (game == null || game.getWinner() != null) {
 			return "redirect:/games";
 		}
 
 		String playerColor = game.getWhite().getUsername().equals(currentUser.getUsername()) ? "white" : "black";
-		
-		if (!color.equals(playerColor)){
+
+		if (!color.equals(playerColor)) {
 			return "redirect:/game/" + style + "/" + id;
 		}
-		
+
 		ObjectMapper objectMapper = new ObjectMapper();
 		String pieceMapJson = objectMapper.writeValueAsString(game.getGamePlay().getGameBoard().getPieceMap());
-		
+
 		model.addAttribute("pieceMapJson", pieceMapJson);
 		model.addAttribute("color", "render_" + playerColor);
 		model.addAttribute("turn", game.getGamePlay().getHalfMoves() % 2 == 0 ? "black-turn" : "white-turn");
@@ -175,27 +182,54 @@ public class GameController {
 
 	@ResponseBody
 	@PostMapping("/game/move")
-	public ResponseEntity<MoveResponseDTO> getUserByUserName(@RequestBody MoveDTO moveDTO) {
-		GamePlay gamePlay = gamePlayRepo.findByGameId(Long.parseLong(moveDTO.getGameId()));
+	public ResponseEntity<MoveResponseDTO> getUserByUserName(@RequestBody MoveDTO moveDTO,
+			@AuthenticationPrincipal Player currentUser, HttpSession session) {
 	
+		GamePlay gamePlay = gamePlayRepo.findByGameId(Long.parseLong(moveDTO.getGameId()));
 		MoveResponseDTO moveResponseDTO = gamePlayServ.validateMove(moveDTO, gamePlay).orElse(new MoveResponseDTO());
-		
+
+		if (GameStyle.valueOf(moveDTO.getGameStyle().toUpperCase()) == GameStyle.AMBIGUOUS) {
+			String attemptsKey = "attempts_" + moveDTO.getGameId() + "_" + currentUser.getUsername();
+			Integer chancesRemaining = (Integer) session.getAttribute(attemptsKey);
+			
+			if (chancesRemaining == null) {
+				chancesRemaining = 2;
+				session.setAttribute(attemptsKey, chancesRemaining);
+			}
+			
+			if (moveResponseDTO.isValid()) {
+				session.setAttribute(attemptsKey, 2);
+			}else if (chancesRemaining > 0) {
+				session.setAttribute(attemptsKey, --chancesRemaining);
+			}else {
+				moveResponseDTO.setOfficialChessMove("XXX ");
+				gamePlay.incrementFiftyMoveClock();
+				gamePlay.addMove(moveResponseDTO.getOfficialChessMove()); // updates move for both String and StringBuffer
+				gamePlay.incrementHalfMoves(); 
+				gamePlay.updateFenSet();
+				gamePlayRepo.save(gamePlay);
+				session.setAttribute(attemptsKey, 2);
+			}
+		}
+
 		if (moveResponseDTO.isValid()) {
+
 			gamePlayServ.finalizeAndSaveGameState(moveDTO, moveResponseDTO, gamePlay);
-		} 
-		
-		//TODO: POC: check ==> checkmate; update with real implementation of checking checkmate/stalemate
-		
-		if(moveResponseDTO.getGameOutcome() == GameOutcome.CHECKMATE) {
+		}
+
+		// TODO: POC: check ==> checkmate; update with real implementation of checking
+		// checkmate/stalemate
+
+		if (moveResponseDTO.getGameOutcome() == GameOutcome.CHECKMATE) {
 			Game activeGame = gamePlay.getGame();
 			activeGame.setOutcome(moveResponseDTO.getGameOutcome());
-			activeGame.setWinner(gamePlay.getHalfMoves() % 2 == 0 ? activeGame.getWhite().getUsername() : activeGame.getBlack().getUsername());
+			activeGame.setWinner(gamePlay.getHalfMoves() % 2 == 0 ? activeGame.getWhite().getUsername()
+					: activeGame.getBlack().getUsername());
 			activeGame.setMoves(activeGame.getGamePlay().getMoveString());
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
 		}
-	
-		
+
 		return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.OK);
 	}
 

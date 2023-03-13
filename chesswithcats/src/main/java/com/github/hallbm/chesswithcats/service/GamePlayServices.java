@@ -1,14 +1,13 @@
 package com.github.hallbm.chesswithcats.service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
+import com.github.hallbm.chesswithcats.domain.AmbiguousMoveValidator;
+import com.github.hallbm.chesswithcats.domain.DefiantMoveValidator;
 import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
@@ -39,10 +38,12 @@ public class GamePlayServices {
 				moveValidator = new ObstructiveMoveValidator(gamePlay, moveDTO);
 				break;
 			case DEFIANT:
-			//	moveValidator = new DefiantMoveValidator(gamePlay, moveDTO);
-			//	break;
-			case CLASSIC:
+				moveValidator = new DefiantMoveValidator(gamePlay, moveDTO);
+				break;
 			case AMBIGUOUS:
+				moveValidator = new AmbiguousMoveValidator(gamePlay, moveDTO);
+				break;
+			case CLASSIC:
 			default:
 				moveValidator = new MoveValidator(gamePlay, moveDTO);
 		}

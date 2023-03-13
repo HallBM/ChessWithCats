@@ -144,16 +144,16 @@ function dragStart(event) {
 	document.getElementById(event.target.name).classList.add("highlight");
 	prevSq = event.target.name;
 
-	
+
 }
 
 document.addEventListener("dragend", function(event) {
 	const dropSuccessful = (event.dataTransfer.dropEffect !== "none");
 	const movedPiece = document.getElementsByName(prevSq)[0];
-	
+
 	if (!dropSuccessful) {
-			movedPiece.classList.remove("hide");
-	} 
+		movedPiece.classList.remove("hide");
+	}
 
 });
 
@@ -205,38 +205,43 @@ async function drop(event) {
 		}
 	})(move);
 
-	if (moveResponse.valid === false) {
-		movedPiece.classList.remove("hide");
+	console.log(moveResponse.officialChessMove);
+	
+	movedPiece.classList.remove("hide");
+	
+	if (moveResponse.valid === false && moveResponse.officialChessMove === "") {
 		return false;
 	}
 
-	movedPiece.classList.remove("hide");
 
-	for (let move of moveResponse.pieceMoves) {
-		if (move[1] == null) {
-			const enPassantCapture = document.getElementById(move[0]);
-			enPassantCapture.removeChild(enPassantCapture.children[0]);
-		} else {
-			let endSquare = document.getElementById(move[1]);
-			let movedPiece = document.querySelector("img[name='" + move[0] + "']");
 
-			if (endSquare.hasChildNodes()) {
-				for (let child of endSquare.childNodes) {
-					if (child.nodeName === "IMG") {
-						endSquare.removeChild(child);
-						break;
+	if (moveResponse.officialChessMove !== "XXX ") {
+		for (let move of moveResponse.pieceMoves) {
+			if (move[1] == null) {
+				const enPassantCapture = document.getElementById(move[0]);
+				enPassantCapture.removeChild(enPassantCapture.children[0]);
+			} else {
+				let endSquare = document.getElementById(move[1]);
+				let movedPiece = document.querySelector("img[name='" + move[0] + "']");
+
+				if (endSquare.hasChildNodes()) {
+					for (let child of endSquare.childNodes) {
+						if (child.nodeName === "IMG") {
+							endSquare.removeChild(child);
+							break;
+						}
 					}
 				}
+
+				endSquare.appendChild(movedPiece);
+				movedPiece.name = move[1];
 			}
-
-			endSquare.appendChild(movedPiece);
-			movedPiece.name = move[1];
 		}
-	}
 
-	document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	endSquare.setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-	prevSq = endSquarePosition;
+		document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
+		endSquare.setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
+		prevSq = endSquarePosition;
+	}
 
 	isWhiteTurn = !isWhiteTurn;
 
