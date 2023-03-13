@@ -34,7 +34,7 @@
 							<label for="username">Username</label> 
 							<input type="text"
 								id="username" name="username" class="form-control username"
-								th:field="*{username}" autocomplete="off" required>
+								th:field="*{username}" autocomplete="off" minlength="3" maxlength="30" required>
 
 							<p class="alert alert-danger" th:if="${#fields.hasErrors('username')}">Username already exists</p>
 							<p class="alert alert-danger" id="msg" style="display:none">Username already exists</p>
@@ -43,7 +43,7 @@
 						<div class="col-5 form-group">
 							<label for="email">Email</label> 
 							<input type="email" id="email"
-								name="email" class="form-control" th:field="*{email}" required>
+								name="email" class="form-control" th:field="*{email}" maxlength="50" required>
 							<p class="alert alert-danger" th:if="${#fields.hasErrors('email')}">There is already an account with this email - would you like to 
 								<a th:href="@{/login}">log in</a> ?</p>
 						</div>
@@ -53,7 +53,7 @@
 								id="fname" name="fname" class="form-control"
 								pattern="^[a-zA-Z\u00C0-\u00FF \-\.,']+$"
 								title="Only letters (incl. accented letters), spaces, commas, apostrophes, and hyphens allowed"
-								th:field="*{firstName}" required>
+								th:field="*{firstName}"  maxlength="50" required>
 							
 						</div>
 						<div class="space"></div>
@@ -63,7 +63,7 @@
 								name="lname" id="lname" class="form-control"
 								pattern="^[a-zA-Z\u00C0-\u00FF \-\.,']+$"
 								title="Only letters (incl. accented letters), spaces, commas, apostrophes, and hyphens allowed"
-								th:field="*{lastName}" required>
+								th:field="*{lastName}"  maxlength="50" required>
 						</div>
 						<div class="col-5 form-group">
 							<label for="password">Password</label> 
@@ -81,7 +81,7 @@
 								class="form-control" th:field="*{confirmedPassword}" required>
 						</div>
 						<div class="col-11 alert alert-danger" th:if="${#fields.hasErrors('password')}">Passwords do not match</div>
-
+						<div class="col-11 alert alert-danger" th:if="${#fields.hasErrors('iconFile')}">You must select an icon to register</div>
 						<div class="col-5 form-group">
 							<label>Select Icon</label>
 						</div>
@@ -92,8 +92,7 @@
 						style="padding: 0 2vw; margin: 0;">
 						<label class="col-2 icon-choice"> <input type="radio"
 							name="icon" class="form-control"
-							value="DALL·E 2023-02-05 12.48.06.png" th:field="*{iconFile}"
-							checked> <img
+							value="DALL·E 2023-02-05 12.48.06.png" th:field="*{iconFile}"> <img
 							src="Images/large_img_catsplayingchess/DALL·E 2023-02-05 12.48.06.png" />
 						</label> <label class="col-2 icon-choice"> <input type="radio"
 							name="icon" class="form-control"
@@ -147,6 +146,9 @@
 	</div>
 
 	<script src="JS/usernameAJAX.js"></script>
+	<script type="application/javascript">
+		document.querySelector("input[type=radio][value='DALL·E 2023-02-05 12.48.06.png']").checked = true;
+	</script>
 	
 </body>
 
