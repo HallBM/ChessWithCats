@@ -48,11 +48,12 @@
 
 							<p class="profile-label" th:if="${password == null and online}">
 							<strong><em style="color:green">Online</em></strong></p>
+						
 						<form th:if="${password} != null" id="expose-edit"
 							style="margin-top: 2vh;">
-							<button id="delete-acct" type="button" class="btn btn-danger">DELETE
-								ACCOUNT</button>
+							<button id="delete-acct" type="button" class="btn btn-danger">DEACTIVATE ACCOUNT</button>
 						</form>
+					
 					</div>
 				</div>
 				<div class="col-3" id="update-fields">
