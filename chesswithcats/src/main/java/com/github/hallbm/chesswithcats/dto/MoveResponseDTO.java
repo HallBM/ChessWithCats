@@ -10,6 +10,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+/**
+ * DTO for generating (via MoveValidator classes) and transmitting move response for the AJAX (Fetch API) call
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

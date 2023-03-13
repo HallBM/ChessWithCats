@@ -29,6 +29,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Persistence of short-term game data used for evaluating/validating and tracking moves.
+ * GamePlay data (and other associated connections other than 'Game') are deleted upon 
+ * game completion. When a game is finished, only game moves (extended piece notation move string) 
+ * are transmitted to Game class for long-term persistence (and can be used to recreate game
+ * move history with future 'game replay' functionality).  
+ * 
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -100,13 +109,8 @@ public class GamePlay {
 	}
 
 	public void addMove(String newMove) {
-
 		moveString += newMove;
 		moves.append(newMove);
-		
-		
-		
-		
 	}
 
 	public void removeCastling(String castle) {

@@ -31,6 +31,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Player/User data persistence; extends UserDetails and AuthenticatedPrincipal for Spring Security authorizations
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

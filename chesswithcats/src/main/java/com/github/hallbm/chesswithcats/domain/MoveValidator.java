@@ -10,6 +10,24 @@ import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.service.GameBoardServices;
 
+/**
+ * Class validates attempted move based on given game state (gamePlay) and attempted move (moveDTO)
+ * which are passed in to the constructor.
+ *  
+ * Constructor expands variables inferred from moveDTO (row/col number, calculated displacement),
+ * and creates deep copy of chess board from gamePlay (PieceNotation [][]) to 
+ * simulate game move and evaluate check/checkmate/stalemate without affecting stored gameboard.
+ * 
+ * 'validate' method as an entry point into the validator; interprets and coordinates flow
+ * through available methods based on game piece moved. Returns MoveResponseDTO object populated with fields, 
+ * or if move is invalid returns a new MoveResponseDTO object where the 'isValidMove' boolean is set to false
+ * to be interpreted by game controller.
+ * 
+ * MoveValidator used for classic chess game. This class extended by other validators to
+ * override methods in order to implement new chess rules.
+ * 
+ */
+
 public class MoveValidator {
 
 	protected GamePlay gamePlay;
@@ -24,6 +42,11 @@ public class MoveValidator {
 	protected PieceNotation movedPiece, attackedPiece;
 	protected boolean isWhite;
 
+	/**
+	 * Constructor with gamePlay and moveDTO parameters.
+	 * All other fields generated from these objects.
+	 */  
+	
 	public MoveValidator(GamePlay gamePlay, MoveDTO moveDTO) {
 		this.gamePlay = gamePlay;
 		this.moveDTO = moveDTO;
@@ -40,12 +63,20 @@ public class MoveValidator {
 		attackedPiece = mockBoard[endRow][endCol];
 		isWhite = movedPiece.getColor() == GameColor.WHITE;
 	
-
 		colDisplacement = 1 * (endCol - startCol);
 		rowDisplacement = -1 * (endRow - startRow);
 		absRowDisp = Math.abs(rowDisplacement);
 		absColDisp = Math.abs(colDisplacement);
 	}
+
+	/**
+	 * Entry point into move validation and composition of MoveResponseDTO object:
+	 * 1) validates move based on allowed piece movements.
+	 * 2) if plausible move, simulates chess move on 'mockBoard' (deep copy of persisted game state)
+	 * 3) checks if move resulted in player's king being in check
+	 * 4) evaluate whether other king has been placed in check
+	 * 5) if moves are not valid, return null moveResponseDTO, otherwise return populated DTO.
+	 */  
 
 	public MoveResponseDTO validate() {
 		boolean isPlausibleMove = false;
@@ -93,11 +124,16 @@ public class MoveValidator {
 			moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE);
 		}
 		
-		
-		
 		return moveResponseDTO;
 	}
 
+	/**
+	 * Navigation functions for evaluating whether a moved piece
+	 * in the indicated direction (according to white player perspective) 
+	 * is attempting to pass through pieces on the board.
+	 * 
+	 * Returns true if move is okay, false if not valid (obstructed).
+	 */  
 	protected boolean navigateRight() {
 		for (int i = 1; i < absColDisp; i++) {
 			if (mockBoard[startRow][startCol + i] != null) {
@@ -170,6 +206,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Logic for classic rook move along row or column.
+	 */  
 	protected boolean checkRookMove() {
 		boolean validMove = (absRowDisp == 0) != (absColDisp == 0);
 		if (!validMove) {
@@ -206,6 +245,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Logic for classic knight move in L shape.
+	 */ 
 	protected boolean checkKnightMove() {
 		boolean validMove = (absRowDisp == 1 && absColDisp == 2);
 		validMove |= (absRowDisp == 2 && absColDisp == 1);
@@ -217,6 +259,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Logic for classic bishop move along diagonal.
+	 */ 
 	protected boolean checkBishopMove() {
 		boolean validMove = absRowDisp == absColDisp;
 		if (!validMove) {
@@ -236,6 +281,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Logic for classic queen move along row, column or diagonal.
+	 */ 
 	protected boolean checkQueenMove() {
 		boolean validMove = ((absRowDisp == 0) != (absColDisp == 0)) || (absRowDisp == absColDisp);
 		if (!validMove) {
@@ -262,11 +310,18 @@ public class MoveValidator {
 
 		return true;
 	}
-
+	
+	/**
+	 * Logic for classic pawn moves.
+	 * 1) Check if move is an attack or en passant capture.
+	 * 2) Check if piece is promoted to a queen, knight, rook, bishop. TODO: logic not fully implemented.
+	 * 3) Check whether move from starting position triggers an en passant attack on next move.
+	 * 4) Check if move is simple forward move in column
+	 */ 
 	protected boolean checkPawnMove() {
-		boolean validMove = (absColDisp <= 1 && absRowDisp == 1);
-		validMove |= (absColDisp == 0 && absRowDisp == 2);
-		validMove &= (isWhite ? 1 : -1) * rowDisplacement > 0;
+		boolean validMove = (absColDisp <= 1 && absRowDisp == 1); 	//forward move +/- attack
+		validMove |= (absColDisp == 0 && absRowDisp == 2); 			// opening pawn move
+		validMove &= (isWhite ? 1 : -1) * rowDisplacement > 0; 		// move is 'forward' (towards opposing side)
 
 		if (!validMove) {
 			return false;
@@ -310,6 +365,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Pawn promotion update of MoveResponseDTO.
+	 */ 
 	protected void evaluatePawnPromotion() {
 		switch (moveDTO.getPromotionPiece().toString().toLowerCase()) {
 		case "r":
@@ -327,6 +385,13 @@ public class MoveValidator {
 		}
 	}
 
+	/**
+	 * Logic for classic king move, including castling if available.
+	 * Moving king directly validates whether king will be in check,
+	 * and for castling, whether piece is in check at any point along
+	 * castling move transition.
+	 * Updates castling rules accordingly within gamePlay object.
+	 */ 
 	protected boolean checkKingMove() {
 		boolean validMove = (absColDisp == 1 || absRowDisp == 1) || (absColDisp == 2 && absRowDisp == 0);
 
@@ -399,7 +464,10 @@ public class MoveValidator {
 
 		return true;
 	}
-
+	
+	/**
+	 * Updates MoveResponseDTO with move validity and piece movement(s).
+	 */ 
 	protected void generateMoveResponse() {
 		moveResponseDTO.setValid(true);
 		String[] move = { startPos, endPos };
@@ -411,6 +479,10 @@ public class MoveValidator {
 		}
 	}
 
+	/**
+	 * Generates String of extended chess move notation for tracking game history.
+	 * MoveResponseDTO object updated with official chess move.
+	 */ 
 	protected void generateOfficialMove() {
 		String move = ""; 
 				
@@ -433,13 +505,21 @@ public class MoveValidator {
 		moveResponseDTO.setOfficialChessMove(move);
 	}
 
+	/**
+	 * Evaluates whether the king of the indicated color is in check.
+	 * Finds piece via GameBoardServices
+	 */ 
 	protected boolean checkNotInCheck(GameColor kingColor) {
 		PieceNotation king = PieceNotation.valueOf(kingColor == GameColor.WHITE ? "K" : "k");
 		int[] kingPos = GameBoardServices.findKingPosition(mockBoard, king);
 
 		return checkNotInCheck(kingPos, kingColor);
 	}
-
+	
+	/**
+	 * Checks whether the king of the indicated color and position is under attack
+	 * in any direction and within reach of knight.
+	 */ 
 	protected boolean checkNotInCheck(int[] kingPos, GameColor kingColor) {
 
 		if (!checkNoKnightAttack(kingPos, kingColor)) {
@@ -454,6 +534,9 @@ public class MoveValidator {
 		return true;
 	}
 
+	/**
+	 * Knight-specific logic for evaluating whether the king is in check.
+	 */ 
 	protected boolean checkNoKnightAttack(int[] kingPos, GameColor kingColor) {
 
 		int r = kingPos[0];
@@ -471,7 +554,11 @@ public class MoveValidator {
 		}
 		return true;
 	}
-
+	
+	/**
+	 * Row/Col-specific logic for evaluating whether the king is in check.
+	 * Looks for un-obstructed opposite-color queen, rook, nearby king.
+	 */ 
 	protected boolean checkNoFileAttack(int[] kingPos, GameColor kingColor) {
 		int r = kingPos[0];
 		int c = kingPos[1];
@@ -501,7 +588,11 @@ public class MoveValidator {
 		}
 		return true;
 	}
-
+	
+	/**
+	 * Diagonal-specific logic for evaluating whether the king is in check.
+	 * Looks for un-obstructed opposite-color queen, bishop, nearby king or nearby pawn (on attacking diagonal).
+	 */ 
 	protected boolean checkNoDiagonalAttack(int[] kingPos, GameColor kingColor) {
 		int r = kingPos[0];
 		int c = kingPos[1];

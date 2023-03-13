@@ -8,6 +8,11 @@ import org.springframework.stereotype.Component;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
+/**
+ * Player logout event updates player 'isLogged' status to indicate to other players that
+ * the user is no longer online 
+ */
+
 @Component
 public class LogoutListener implements ApplicationListener<LogoutSuccessEvent> {
     

@@ -25,6 +25,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Short-term persistence of active game states, including 
+ * 1) board state comprised of a 8x8 matrix of piece enums: PieceNotation[][]
+ * 2) hashmap of current square mapping associated PieceNotation enum, e.g., "A5":"Q"
+ * 
+ * included helper function for updating FEN
+ */
+
 @Getter
 @Setter
 @AllArgsConstructor

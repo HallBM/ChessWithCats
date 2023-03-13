@@ -6,29 +6,26 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
-import com.github.hallbm.chesswithcats.dto.PlayerRegistrationDTO;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.GameServices;
 import com.github.hallbm.chesswithcats.service.PlayerServices;
 
 import jakarta.transaction.Transactional;
+
+/**
+ * Controller related to database operations for viewing player profiles
+ */
 
 @RestController
 @Component("ProfilePageController")
@@ -43,6 +40,11 @@ public class ProfileController {
 	@Autowired
 	GameServices gameServ;
 	
+	/**
+	 * Displays the current users profile. Displays additional information than outside users can view.
+	 * Allows for users to deactivate their own account.
+	 * Profile page shows summary of all completed games.
+	 */
 	@GetMapping("/profile")
 	public ModelAndView accessProfile(Model model, @AuthenticationPrincipal Player currentUser) {
 		
@@ -65,7 +67,12 @@ public class ProfileController {
 		return new ModelAndView("profile", model.asMap());
 	}
 
-
+	/**
+	 * Displays player profiles for other players (limited information).
+	 * Displays whether the user is currently logged in.
+	 * Profile page shows summary of all completed games for the player, 
+	 * and additionally, shows a head-to-head match-up between players (from the user's perspective).
+	 */
 	@GetMapping("/profile/{username}")
 	public ModelAndView accessOtherProfile(Model model, @PathVariable String username, @AuthenticationPrincipal Player currentUser) {
 
@@ -95,6 +102,11 @@ public class ProfileController {
 		return new ModelAndView("profile");
 	}
 	
+	/**
+	 * Users are able to 'deactivate' their own accounts.
+	 * This does not delete the user (but removes their ability to validate
+	 * their credentials for login).
+	 */
 	@Modifying
 	@Transactional
 	@PostMapping("/delete-account")

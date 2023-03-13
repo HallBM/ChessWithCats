@@ -13,7 +13,7 @@ public interface GameRepository extends JpaRepository<Game, Long>{
 	
 	@Query(value = "SELECT * FROM games g "
 			+ "WHERE (g.white_username = :username OR g.black_username = :username) AND g.winner IS NULL "
-			+ "ORDER BY g.id", nativeQuery = true)
+			+ "ORDER BY g.id DESC", nativeQuery = true)
 	List<Game> getActiveByUsername(String username);
 	
 	@Query(value = "SELECT * FROM games g "

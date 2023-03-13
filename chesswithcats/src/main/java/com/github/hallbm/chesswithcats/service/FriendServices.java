@@ -13,18 +13,22 @@ import com.github.hallbm.chesswithcats.domain.FriendEnums.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.FriendRequest;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.FriendRequestRepository;
-import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
 import jakarta.transaction.Transactional;
 
+/**
+ * Services for maintaining player relationships.
+ */
+
 @Service
 public class FriendServices {
-	@Autowired
-	private PlayerRepository playerRepo;
 
 	@Autowired
 	private FriendRequestRepository friendReqRepo;
 
+	/**
+	 * Returns a set of usernames that have sent friend requests to the @Param currentUsername.
+	 */
 	@Transactional
 	public Set<String> getReceivedFriendRequestUsernames(String currentUsername){
 		List<FriendRequest> receivedPendingRequests =
@@ -36,6 +40,9 @@ public class FriendServices {
 		return requestingPlayerUsernames;
 	}
 
+	/**
+	 * Returns a set of usernames that have been sent friend requests by the @Param currentUsername.
+	 */
 	@Transactional
 	public Set<String> getPendingFriendRequestUsernames(String currentUsername) {
 		List<FriendRequest> sentPendingRequests =
@@ -47,6 +54,9 @@ public class FriendServices {
 		return requestedPlayerUsernames;
 	}
 
+	/**
+	 * Returns a set of usernames that have been blocked by the @Param currentUsername.
+	 */
 	@Transactional
 	public Set<String> getBlockedUsernames (String currentUsername) {
 		List<FriendRequest> blockedFriendRequests =
@@ -63,7 +73,10 @@ public class FriendServices {
 				.collect(Collectors.toSet()));
 		return blockedUsernames;
 	}
-
+	
+	/**
+	 * Returns a set of usernames that have been befriended by the @Param currentUsername.
+	 */
 	@Transactional
 	public Set<String> getFriendUsernames (String currentUsername){
 
@@ -83,6 +96,10 @@ public class FriendServices {
 
 	}
 
+	/**
+	 * Returns a set of usernames for all associated 'friend requests' in the database regardless of status for the @Param currentUsername.
+	 * Includes accepted, sent/received pending requests, and blocked status (either party).
+	 */
 	@Transactional
 	public Set<String> getAllConnectionUsernamesAndSelf (String currentUsername){
 		List<FriendRequest> connections =

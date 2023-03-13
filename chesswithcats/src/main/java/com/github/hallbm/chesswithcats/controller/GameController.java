@@ -1,5 +1,7 @@
 package com.github.hallbm.chesswithcats.controller;
 
+import java.sql.SQLException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,10 @@ import com.github.hallbm.chesswithcats.service.GameServices;
 
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * Controller related to CRUD for long-term storage of games played
+ */
+
 @Controller
 public class GameController {
 
@@ -60,6 +66,11 @@ public class GameController {
 	@Autowired
 	private GamePlayRepository gamePlayRepo;
 
+	/**
+	 * Generates and displays lists of games based on status of request
+	 * (received request, pending request, active games (accepted, unfinished)
+	 * and completed games) for display on the 'games' page.
+	 */
 	@GetMapping("/games")
 	public String showGamesPage(Model model, @AuthenticationPrincipal Player currentUser) {
 
@@ -75,9 +86,13 @@ public class GameController {
 		return "games";
 	}
 
+	/**
+	 * Creates new game request. Player able to select a friend from a drop down menu,
+	 * or select a 'random' player based on last login. 
+	 */
 	@PostMapping("/gameRequest")
 	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq,
-			BindingResult result, @AuthenticationPrincipal Player currentUser) {
+			BindingResult result, @AuthenticationPrincipal Player currentUser) throws SQLException {
 
 		GameRequest newReq = new GameRequest();
 
@@ -85,11 +100,13 @@ public class GameController {
 		Player receiver;
 
 		if (gameReq.getOpponent().equals("1")) {
+			
 			receiver = gameServ.findRandomOpponent(sender, gameReq.getStyle());
 
 			if (receiver == null) {
 				return "redirect:/games";
 			}
+		
 		} else {
 			receiver = playerRepo.findByUsername(gameReq.getOpponent());
 		}
@@ -97,11 +114,16 @@ public class GameController {
 		newReq.setSender(sender);
 		newReq.setReceiver(receiver);
 		newReq.setStyle(gameReq.getStyle());
-		gameReqRepo.save(newReq);
+		gameReqRepo.save(newReq); 
 
 		return "redirect:/games";
+			
+		
 	}
-
+	
+	/**
+	 * Decline game request (deletes record). 
+	 */
 	@ResponseBody
 	@PostMapping("/gameRequest/decline/{id}")
 	public ModelAndView declineGameRequest(@PathVariable("id") Long id) {
@@ -111,6 +133,11 @@ public class GameController {
 		return new ModelAndView("redirect:/games");
 	}
 
+	/**
+	 * Forfeit game. If no game moves were made, simply deletes record.
+	 * If the game already started, marks the game complete and counts
+	 * as a loss for the forfeiting party. 
+	 */
 	@PostMapping("/game/forfeit/{id}")
 	public String forfeit(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 
@@ -119,6 +146,12 @@ public class GameController {
 		return "redirect:/games";
 	}
 
+	/**
+	 * Request a draw.
+	 * 
+	 * Currently written to force draw for POC. TODO Need to implement logic for
+	 * requesting acceptance of a requested draw.
+	 */
 	@PostMapping("/game/draw/{id}")
 	public String initiateDraw(@PathVariable("id") String id, @AuthenticationPrincipal Player currentUser) {
 
@@ -127,6 +160,10 @@ public class GameController {
 		return "redirect:/games";
 	}
 
+	/**
+	 * Accepting a game request generates a new game, assigns random color (black / white)
+	 * and redirects user to the chess game. 
+	 */
 	@PostMapping("/gameRequest/accept/{id}/{style}/{opponent}")
 	public String acceptGameRequest(@PathVariable long id, @PathVariable GameStyle style, @PathVariable String opponent,
 			@AuthenticationPrincipal Player currentUser) {
@@ -136,6 +173,10 @@ public class GameController {
 				+ String.format("%06d", newGame.getId());
 	}
 
+	/**
+	 * Endpoint for entering a game, where the player will be redirected to their 
+	 * appropriate color if they are part of the game, or if not, redirected to game page.
+	 */
 	@GetMapping("/game/{style}/{id}")
 	public String retrieveGame(Model model, @PathVariable String style, @PathVariable String id,
 			@AuthenticationPrincipal Player currentUser) {
@@ -149,6 +190,12 @@ public class GameController {
 		}
 	}
 
+	/**
+	 * Final endpoint for entering the game. The color is interpreted by front end
+	 * to affect the way the board is displayed (from white or black player view).
+	 * Other model attributes included to direct game logic and info display, such as 
+	 * who's turn it is.
+	 */
 	@GetMapping("/game/{style}/{id}/{color}")
 	public String enterGame(Model model, @PathVariable String style, @PathVariable String id,
 			@PathVariable String color, @AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
@@ -179,7 +226,27 @@ public class GameController {
 
 		return "chessboard";
 	}
-
+	
+	/**
+	 * AJAX for making a move, with move validation prior to acceptance of move.
+	 * Moves are filtered on the front end via javascript to only allow moves where 
+	 * pieces are dropped either on empty squares or player pieces of the opposite color.
+	 * All other game logic handled at this end point for validating the move.
+	 * 
+	 * Move validation occurs in two steps.
+	 * 1) GamePlayServices evaluates moveDTO (from front end) and current state of game (gamePlay).
+	 * This function attempts to generate a MoveResponseDTO object that contains inferences about
+	 * the move. If the move is plausible (according to rules of how pieces move), and before and after the move,
+	 * the user is not in check, the move proceeds to the next function, where the move is persisted.
+	 * 2) GamePlayServices persists the move and updates game state via the finalizeAndSaveGameState function,
+	 * which uses the moveDTO, gamePlay and generated moveResponseDTO.
+	 * 
+	 * TODO Other than checkmate, other endings need to be implemented, such as 50 move rule, stalemate, etc.
+	 * 
+	 * For "ambiguous" games, implemented a session attribute for tracking the number of failed moves
+	 * (likely, given that all the pieces look the same and the player may have lost track of
+	 * what piece they are currently trying to move. User gets 3 attempts to make a move before their move is forfeited. 
+	 */
 	@ResponseBody
 	@PostMapping("/game/move")
 	public ResponseEntity<MoveResponseDTO> getUserByUserName(@RequestBody MoveDTO moveDTO,
@@ -213,7 +280,6 @@ public class GameController {
 		}
 
 		if (moveResponseDTO.isValid()) {
-
 			gamePlayServ.finalizeAndSaveGameState(moveDTO, moveResponseDTO, gamePlay);
 		}
 

@@ -13,6 +13,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Persistence of authorities for player class for Spring security authorization
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

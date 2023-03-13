@@ -12,14 +12,24 @@ import com.github.hallbm.chesswithcats.domain.GameEnums.PieceNotation;
 import com.github.hallbm.chesswithcats.model.Game;
 import com.github.hallbm.chesswithcats.model.GameBoard;
 
-public final class GameBoardServices {
+/**
+ * Services associated with maintenance and properties of the actual chessboard state.
+ */
 
+public final class GameBoardServices {
+	
+	/**
+	 * Square positions of the corresponding PieceNotation[][] board: e.g., [0][0] = "A8".
+	 */
 	private final static String[][] squares = { { "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8" },
 			{ "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7" }, { "A6", "B6", "C6", "D6", "E6", "F6", "G6", "H6" },
 			{ "A5", "B5", "C5", "D5", "E5", "F5", "G5", "H5" }, { "A4", "B4", "C4", "D4", "E4", "F4", "G4", "H4" },
 			{ "A3", "B3", "C3", "D3", "E3", "F3", "G3", "H3" }, { "A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2" },
 			{ "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1" } };
 
+	/**
+	 * Mapping of column letter to PieceNotation[][] board index.
+	 */
 	private final static Map<Character, Integer> columnMap = new HashMap<>() {
 		{
 			put('A', 0);
@@ -32,7 +42,10 @@ public final class GameBoardServices {
 			put('H', 7);
 		}
 	};
-
+	
+	/**
+	 * Mapping of row number to PieceNotation[][] board index.
+	 */
 	private final static Map<Character, Integer> rowMap = new HashMap<>() {
 		{
 			put('1', 7);
@@ -58,6 +71,11 @@ public final class GameBoardServices {
 		return rowMap.get(location.charAt(1));
 	}
 
+	/**
+	 * Initial game setup of classic chess game.
+	 * String[] pieces converted to PieceNotation. 
+	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap assigned pieces.
+	 */
 	public static void setupGameBoard(Game game) {
 
 		String[] pieces = "rnbqkbnrppppppppPPPPPPPPRNBQKBNR".split("");
@@ -76,6 +94,10 @@ public final class GameBoardServices {
 		}
 	}
 
+	/**
+	 * For 'obstructive' game, 4 cats added to the game board (1 per quadrant)
+	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap assigned cats.
+	 */
 	public static void addFourCats(Game game) {
 		int[] quad1 = new int[2];
 		int[] quad2 = new int[2];
@@ -136,7 +158,15 @@ public final class GameBoardServices {
 					PieceNotation.C);
 		}
 	}
-
+	
+	/**
+	 * Movement of chess pieces on the board
+	 * @Param PieceNotation[][] board;
+	 * @Param List<String[]> moves from moveResponseDTO; String[2] represents [startPos, endPos], e.g., ["A3","B4"]
+	 * @Param String promotionPiece from moveDTO to indicate what piece a pawn was promoted to
+	 * 
+	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap updated.
+	 */
 	public static void movePiece(PieceNotation[][] board, List<String[]> moves, String promotionPiece) {
 		int start_row;
 		int start_col;
@@ -168,6 +198,14 @@ public final class GameBoardServices {
 		}
 	}
 	
+	/**
+	 * Movement of chess pieces on the board
+	 * @Param GameBoard
+	 * @Param List<String[]> moves from moveResponseDTO; String[2] represents [startPos, endPos], e.g., ["A3","B4"]
+	 * @Param String promotionPiece from moveDTO to indicate what piece a pawn was promoted to
+	 * 
+	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap updated.
+	 */
 	public static void movePiece(GameBoard board, List<String[]> moves, String promotionPiece) {
 		int start_row;
 		int start_col;
@@ -205,10 +243,14 @@ public final class GameBoardServices {
 		}
 	}
 
-	public static int[] findKingPosition(PieceNotation[][] board, PieceNotation k) {
+	/**
+	 * Iterates over PieceNotation[][] board to find king of an indicated color ("K" = white king, "k" = black king)
+	 * Returns array of row index and column index of indicated king.
+	 */
+	public static int[] findKingPosition(PieceNotation[][] board, PieceNotation Kk) {
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
-				if (board[i][j] == k) {
+				if (board[i][j] == Kk) {
 					return new int[]{i,j};
 				}
 			}

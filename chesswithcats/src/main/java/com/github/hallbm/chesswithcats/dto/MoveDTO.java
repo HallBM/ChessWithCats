@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO for transmitting move data from front end (AJAX via Fetch API) for validation
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

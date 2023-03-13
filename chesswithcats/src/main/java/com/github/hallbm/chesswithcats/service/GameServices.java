@@ -27,7 +27,9 @@ import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
-import jakarta.transaction.Transactional;
+/**
+ * Services associated with CRUD for GameRequests long-term persisted Games. 
+ */
 
 @Service
 public class GameServices {
@@ -41,16 +43,19 @@ public class GameServices {
 	@Autowired
 	private PlayerRepository playerRepo;
 
-	@Autowired
-	private GamePlayServices gamePlayServ;
-
+	/**
+	 * Returns GameRequestDTO created from pending gameRequests sent from @Param username for front end display 
+	 */
 	public List<GameRequestDTO> getReceivedGameRequestDTOs(String username) {
 		List<GameRequest> receivedList = gameReqRepo.findByReceiverUsernameOrderByStyleAscCreatedAtDesc(username);
 		List<GameRequestDTO> receivedListDTO = receivedList.stream().map(game -> createGameRequestDTO(game, username))
 				.collect(Collectors.toList());
 		return receivedListDTO;
 	}
-
+	
+	/**
+	 * Returns GameRequestDTO created from pending gameRequests sent by @Param username for front end display
+	 */
 	public List<GameRequestDTO> getSentGameRequestDTOs(String username) {
 		List<GameRequest> pendingList = gameReqRepo.findBySenderUsernameOrderByStyleAscCreatedAtDesc(username);
 		List<GameRequestDTO> pendingListDTO = pendingList.stream().map(game -> createGameRequestDTO(game, username))
@@ -58,13 +63,19 @@ public class GameServices {
 		return pendingListDTO;
 	}
 
+	/**
+	 * Returns GameDTO created from active games with @Param username listed as a player for front end display
+	 */
 	public List<GameDTO> getActiveGameDTOs(String username) {
 		List<Game> activeList = gameRepo.getActiveByUsername(username);
 		List<GameDTO> activeListDTO = activeList.stream().map(game -> createGameDTO(game, username))
 				.collect(Collectors.toList());
 		return activeListDTO;
 	}
-
+	
+	/**
+	 * Returns GameDTO created from completed games with @Param username listed as a player for front end display
+	 */
 	public List<GameDTO> getCompletedGameDTOs(String username) {
 		List<Game> completedList = gameRepo.getCompleteByUsername(username);
 		List<GameDTO> completedListDTO = completedList.stream().map(game -> createGameDTO(game, username))
@@ -72,7 +83,10 @@ public class GameServices {
 		return completedListDTO;
 	}
 
-	public GameRequestDTO createGameRequestDTO(GameRequest gameReq, String username) {
+	/**
+	 * Helper function for converting persisted GameRequest into GameRequestDTO 
+	 */
+	private GameRequestDTO createGameRequestDTO(GameRequest gameReq, String username) {
 
 		GameRequestDTO gameReqDTO = new GameRequestDTO();
 		gameReqDTO.setId(String.valueOf(gameReq.getId()));
@@ -83,7 +97,10 @@ public class GameServices {
 		return gameReqDTO;
 	}
 
-	public GameDTO createGameDTO(Game game, String username) {
+	/**
+	 * Helper function for converting persisted Game into GameDTO 
+	 */
+	private GameDTO createGameDTO(Game game, String username) {
 
 		if (game == null) {
 			return null;
@@ -109,6 +126,11 @@ public class GameServices {
 		return gameDTO;
 	}
 
+	/**
+	 * Method for matching user with a random player.
+	 * List of random players prioritized by last login, with preference towards those logged in but not actively playing.
+	 * Returns random player or null if no players can be found. 
+	 */
 	public Player findRandomOpponent(Player sender, GameStyle style) {
 
 		List<Player> potentialOpponent = playerRepo.findTop20ByIsLoggedAndIsPlayingOrderByLastLoginDesc(true, false)
@@ -125,6 +147,12 @@ public class GameServices {
 		return potentialOpponent.get(randIndex);
 	}
 
+	/**
+	 * Method for forfeiting game.
+	 * If no moves are made, game is simply deleted.
+	 * Otherwise, game outcome updated as 'resignation', and 
+	 * player requesting forfeit take a loss, and opponent take a win.
+	 */
 	@Modifying
 	public void forfeitGame(Long id, String username) {
 		Game activeGame = gameRepo.findById(id).get();
@@ -145,7 +173,13 @@ public class GameServices {
 			gameRepo.save(activeGame);
 		}
 	}
-
+	
+	/**
+	 * Method for draw of game.
+	 * TODO Game currently forces acceptance of a draw request from the opponent, but
+	 * need to implement logic for draw to be accepted. Also, need to implement other
+	 * methods for reaching a draw, like stalemate, 50 move rule, etc.
+	 */
 	@Modifying
 	public void drawGame(Long id, String username) {
 		Game activeGame = gameRepo.findById(id).get();
@@ -156,6 +190,11 @@ public class GameServices {
 		gameRepo.save(activeGame);
 	}
 
+	/**
+	 * Method creating game from a game request.
+	 * Persists newly created game and deletes game request used to make game.
+	 * Returns new game.
+	 */
 	@Modifying
 	public Game createGameFromRequest(Long requestId, GameStyle style, String opponentUsername) {
 
@@ -175,7 +214,7 @@ public class GameServices {
 			newGame.setBlack(gameReq.getSender());
 		}
 
-		// only include if opponent is not human: newGame.setOpponentIsHuman(false);
+		// TODO only include if opponent is not human: newGame.setOpponentIsHuman(false);
 
 		GameBoardServices.setupGameBoard(newGame);
 		String openingFen = newGame.getGamePlay().updateFenSet();
@@ -187,15 +226,30 @@ public class GameServices {
 		return newGame;
 	}
 
+	/**
+	 * Method for generating game statistics for user's own profile page.
+	 * Calculates Total games, and Win,Lose,Draw percentages of completed games for user
+	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByPlayer(String username) {
 		return getWinDrawLosePercentage(gameRepo.getCompleteByUsernameOrderByStyle(username), username);
 	}
-
+	
+	/**
+	 * Method for generating game statistics for other user's profile page.
+	 * Calculates Total games, and Win,Lose,Draw percentages of completed games
+	 * in which both indicated users have played against each other
+	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByOpponents(String currentUsername, String username2) {
 		return getWinDrawLosePercentage(gameRepo.getCompleteByOpponentsOrderByStyle(currentUsername, username2),
 				currentUsername);
 	}
-
+	
+	/**
+	 * Helper function for calculating total games, and win,lose,draw percentages.
+	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentage(List<Game> databaseResults, String currentUsername) {
 
 		Map<GameStyle, Integer[]> stats = new HashMap<>();
@@ -225,7 +279,13 @@ public class GameServices {
 		}
 		return stats;
 	}
-
+	
+	/**
+	 * Method for calculating leaderboard stats, i.e., top 5 players for a given game style.
+	 * Player scores calculated by total wins minus total losses per game style (WIN +1, DRAW 0, LOSS -1). 
+	 * @Param GameStyle 
+	 * Returns an ArrayList of up to 5 Object[], representing [Player, score]
+	 */
 	public List<Object[]> getTopPlayers(GameStyle style) {
 		List<Game> games = gameRepo.getWonOrLostGamesByStyle(style.toString()).orElse(null);
 

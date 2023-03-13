@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO for transmitting player registration data from the front end for validation and persistence
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

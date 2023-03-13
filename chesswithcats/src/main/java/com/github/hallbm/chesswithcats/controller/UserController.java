@@ -10,7 +10,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +24,9 @@ import com.github.hallbm.chesswithcats.service.PlayerServices;
 
 import jakarta.validation.Valid;
 
+/**
+ * Controller related to player login, registration and logout.
+ */
 @Controller
 public class UserController {
 
@@ -71,9 +73,6 @@ public class UserController {
 		return loginCred;
 	}
 
-	//TODO only 1 log in per username
-
-
 	@GetMapping("/register")
 	public String playerRegistration(Model model) {
 		model.addAttribute("playerReg", new PlayerRegistrationDTO());
@@ -102,12 +101,17 @@ public class UserController {
 			result.rejectValue("username", null);
 			return "register";
 		}
-
+		
 		if (!playerReg.getPassword().equals(playerReg.getConfirmedPassword())) {
 			result.rejectValue("password", null);
 			return "register";
 		}
 
+		if (playerReg.getIconFile() == null) {
+			result.rejectValue("iconFile", null);
+			return "register";
+		}
+		
 	    if (result.hasErrors()){
 	        return "register";
 	    }

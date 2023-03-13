@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
+/**
+ * DTO for transmitting login data from front end for user validation / authentication
+ */
 
 @Getter
 @Setter

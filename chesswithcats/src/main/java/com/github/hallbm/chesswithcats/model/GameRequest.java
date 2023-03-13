@@ -23,6 +23,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Short-term persistence of game requests (deleted upon resolution: accept / decline))
+ * Players randomly assigned white/black upon conversion to game at time of acceptance. 
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

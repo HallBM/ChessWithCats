@@ -1,7 +1,13 @@
 package com.github.hallbm.chesswithcats.domain;
 
+/**
+ * List of enum sets for standardizing options for games and game requests
+ */
 public class GameEnums {
 
+	/**
+	 * List of current chess variations available
+	 */	
 	public enum GameStyle {
 		CLASSIC("Classic Chess"),
 		OBSTRUCTIVE("Obstructive Kitties"),
@@ -19,6 +25,10 @@ public class GameEnums {
 		}
 	}
 
+	/**
+	 * Chess piece types
+	 * 'Cat' piece included for 'Obstructive' chess style
+	 */	
 	public enum PieceType {
 		KING("K"),
 		QUEEN("Q"),
@@ -43,6 +53,10 @@ public class GameEnums {
 		}
 	}
 	
+	/**
+	 * Chess pieces denoted by chess piece notation 
+	 * 'Cat' piece "C" included for 'Obstructive' chess style
+	 */	
 	public enum PieceNotation{
 		R(GameColor.WHITE, PieceType.ROOK),
 		N(GameColor.WHITE, PieceType.KNIGHT),
@@ -76,6 +90,9 @@ public class GameEnums {
 	    }
 	}
 	
+	/**
+	 * Available chess moves for tracking move validation and response
+	 */	
 	public enum ChessMove{
 		SIMPLE_MOVE, CAPTURE, 
 		EN_PASSANT, 
@@ -84,16 +101,29 @@ public class GameEnums {
 		CHECK; 
 	}
 	
+	/**
+	 * All possible game outcomes for the Game class
+	 * Checkmate and Timeout are WIN/LOSE scenario.
+	 * Accepted (moves haven't been made) and Incomplete (unfinished games) included
+	 * to track game progress.
+	 * All remaining are DRAW scenarios. 
+	 */	
 	public enum GameOutcome {
 		CHECKMATE, TIMEOUT,
 		RESIGNATION, STALEMATE, INSUFFICIENT_MATERIAL, EXCESSIVE_MOVE_RULE, REPETITION, AGREEMENT, 
 		ACCEPTED, INCOMPLETE;
 	}
-
+	
+	/**
+	 * Game outcomes with respect to win, lose and draw (WLD) 
+	 */	
 	public enum GameWLD{
 		WIN, LOSE, DRAW;
 	}
-
+	
+	/**
+	 * Game colors used in game (neutral added for 'cat' pieces) 
+	 */	
 	public enum GameColor {
 		WHITE, BLACK, NEUTRAL;
 	}

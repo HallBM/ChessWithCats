@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import com.github.hallbm.chesswithcats.domain.FriendEnums.BlockedBy;
 import com.github.hallbm.chesswithcats.domain.FriendEnums.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.FriendRequest;
-import com.github.hallbm.chesswithcats.model.Game;
 
 import jakarta.transaction.Transactional;
 

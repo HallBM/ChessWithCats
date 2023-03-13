@@ -10,6 +10,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO for transmitting limited data related to Game class
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

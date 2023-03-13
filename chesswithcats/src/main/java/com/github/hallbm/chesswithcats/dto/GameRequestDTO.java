@@ -7,6 +7,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO for transmitting data from front end for creation of new Game Request
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

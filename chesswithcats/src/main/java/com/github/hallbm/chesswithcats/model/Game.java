@@ -28,6 +28,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Persistence of long-term game data. 
+ */
+
 @Getter
 @Setter
 @NoArgsConstructor

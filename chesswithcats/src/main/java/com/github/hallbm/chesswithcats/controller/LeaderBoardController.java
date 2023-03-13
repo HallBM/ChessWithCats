@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.service.GameServices;
 
+/**
+ * Controller related to display of top 5 users for each style of game
+ */
+
+
 @Controller
 public class LeaderBoardController {
 

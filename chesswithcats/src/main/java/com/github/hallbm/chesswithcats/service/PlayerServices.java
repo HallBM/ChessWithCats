@@ -16,6 +16,10 @@ import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
 import jakarta.transaction.Transactional;
 
+/**
+ * Services for new player registration with security features.
+ */
+
 @Service
 public class PlayerServices implements UserDetailsService{
 
