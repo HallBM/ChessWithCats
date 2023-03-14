@@ -3,7 +3,6 @@ package com.github.hallbm.chesswithcats.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,16 +15,12 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.model.Game;
 import com.github.hallbm.chesswithcats.model.GamePlay;
-import com.github.hallbm.chesswithcats.model.GameRequest;
 import com.github.hallbm.chesswithcats.model.Player;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 public class GamePlayRepositoryTest {
 
-	@Autowired
-	private GameRequestRepository gameReqRepo;
-	
 	@Autowired
 	private PlayerRepository playerRepo;
 	

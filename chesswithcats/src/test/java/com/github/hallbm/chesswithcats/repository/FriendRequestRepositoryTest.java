@@ -132,12 +132,12 @@ public class FriendRequestRepositoryTest {
 		List<FriendRequest> friendRequestListDB2 = friendReqRepo.getByUsername(player2.getUsername());
 		assertThat(friendRequestListDB2).isNotNull();
 		assertThat(friendRequestListDB2.size()).isEqualTo(2);
-		assertThat(friendRequestListDB2.get(0).getSender()).isEqualTo(player1);
+		assertThat(friendRequestListDB2.get(0).getSender().getUsername()).isEqualTo(player1.getUsername());
 
 		List<FriendRequest> friendRequestListDB3 = friendReqRepo.getByUsername(player3.getUsername());
 		assertThat(friendRequestListDB3).isNotNull();
 		assertThat(friendRequestListDB3.size()).isEqualTo(2);
-		assertThat(friendRequestListDB3.get(0).getSender()).isEqualTo(player1);
+		assertThat(friendRequestListDB3.get(0).getSender().getUsername()).isEqualTo(player1.getUsername());
 
 		List<FriendRequest> friendRequestListDB4 = friendReqRepo.getByUsername(player4.getUsername());
 		assertThat(friendRequestListDB4).isNotNull();
@@ -155,7 +155,7 @@ public class FriendRequestRepositoryTest {
 		FriendRequest friendRequestDB2 = friendReqRepo.findByReceiverUsernameAndSenderUsername(player2.getUsername(),
 				player1.getUsername());
 		assertThat(friendRequestDB2).isNotNull();
-		assertThat(friendRequestDB2.getSender()).isEqualTo(player1);
+		assertThat(friendRequestDB2.getSender().getUsername()).isEqualTo(player1.getUsername());
 	}
 
 	@DisplayName("Test for findBySenderUsernameAndStatus")
@@ -166,13 +166,13 @@ public class FriendRequestRepositoryTest {
 				FriendRequestStatus.ACCEPTED);
 		assertThat(friendRequestListDB1).isNotNull();
 		assertThat(friendRequestListDB1.size()).isEqualTo(1);
-		assertThat(friendRequestListDB1.get(0).getReceiver()).isEqualTo(player3);
+		assertThat(friendRequestListDB1.get(0).getReceiver().getUsername()).isEqualTo(player3.getUsername());
 
 		List<FriendRequest> friendRequestListDB2 = friendReqRepo.findBySenderUsernameAndStatus(player1.getUsername(),
 				FriendRequestStatus.BLOCKED);
 		assertThat(friendRequestListDB2).isNotNull();
 		assertThat(friendRequestListDB2.size()).isEqualTo(1);
-		assertThat(friendRequestListDB2.get(0).getReceiver()).isEqualTo(player4);
+		assertThat(friendRequestListDB2.get(0).getReceiver().getUsername()).isEqualTo(player4.getUsername());
 	}
 
 	@DisplayName("Test for findByReceiverUsernameAndStatus")
@@ -183,13 +183,13 @@ public class FriendRequestRepositoryTest {
 				FriendRequestStatus.ACCEPTED);
 		assertThat(friendRequestListDB1).isNotNull();
 		assertThat(friendRequestListDB1.size()).isEqualTo(1);
-		assertThat(friendRequestListDB1.get(0).getSender()).isEqualTo(player3);
+		assertThat(friendRequestListDB1.get(0).getSender().getUsername()).isEqualTo(player3.getUsername());
 
 		List<FriendRequest> friendRequestListDB2 = friendReqRepo.findByReceiverUsernameAndStatus(player4.getUsername(),
 				FriendRequestStatus.BLOCKED);
 		assertThat(friendRequestListDB2).isNotNull();
 		assertThat(friendRequestListDB2.size()).isEqualTo(1);
-		assertThat(friendRequestListDB2.get(0).getSender()).isEqualTo(player1);
+		assertThat(friendRequestListDB2.get(0).getSender().getUsername()).isEqualTo(player1.getUsername());
 	}
 
 	@DisplayName("Test for getByUsernameAndStatus")
@@ -200,13 +200,13 @@ public class FriendRequestRepositoryTest {
 				FriendRequestStatus.ACCEPTED.toString());
 		assertThat(friendRequestListDB1).isNotNull();
 		assertThat(friendRequestListDB1.size()).isEqualTo(1);
-		assertThat(friendRequestListDB1.get(0).getSender()).isEqualTo(player3);
+		assertThat(friendRequestListDB1.get(0).getSender().getUsername()).isEqualTo(player3.getUsername());
 
 		List<FriendRequest> friendRequestListDB2 = friendReqRepo.getByUsernameAndStatus(player1.getUsername(),
 				FriendRequestStatus.BLOCKED.toString());
 		assertThat(friendRequestListDB2).isNotNull();
 		assertThat(friendRequestListDB2.size()).isEqualTo(1);
-		assertThat(friendRequestListDB2.get(0).getReceiver()).isEqualTo(player4);
+		assertThat(friendRequestListDB2.get(0).getReceiver().getUsername()).isEqualTo(player4.getUsername());
 	}
 
 	@DisplayName("Test for getBlockedByUsername")
@@ -216,7 +216,7 @@ public class FriendRequestRepositoryTest {
 		List<FriendRequest> friendRequestListDB1 = friendReqRepo.getBlockedByUsername(player1.getUsername());
 		assertThat(friendRequestListDB1).isNotNull();
 		assertThat(friendRequestListDB1.size()).isEqualTo(1);
-		assertThat(friendRequestListDB1.get(0).getReceiver()).isEqualTo(player4);
+		assertThat(friendRequestListDB1.get(0).getReceiver().getUsername()).isEqualTo(player4.getUsername());
 
 		List<FriendRequest> friendRequestListDB2 = friendReqRepo.getBlockedByUsername(player4.getUsername());
 		assertThat(friendRequestListDB2).isEmpty();
@@ -229,12 +229,12 @@ public class FriendRequestRepositoryTest {
 		FriendRequest friendRequestDB1 = friendReqRepo.getFriendshipByUsernames(player1.getUsername(),
 				player3.getUsername());
 		assertThat(friendRequestDB1).isNotNull();
-		assertThat(friendRequestDB1.getReceiver()).isEqualTo(player3);
+		assertThat(friendRequestDB1.getReceiver().getUsername()).isEqualTo(player3.getUsername());
 
 		FriendRequest friendRequestDB2 = friendReqRepo.getFriendshipByUsernames(player3.getUsername(),
 				player1.getUsername());
 		assertThat(friendRequestDB2).isNotNull();
-		assertThat(friendRequestDB2.getReceiver()).isEqualTo(player3);
+		assertThat(friendRequestDB2.getReceiver().getUsername()).isEqualTo(player3.getUsername());
 	}
 
 	@DisplayName("Test for deleteByReceiverUsernameAndSenderUsername")
