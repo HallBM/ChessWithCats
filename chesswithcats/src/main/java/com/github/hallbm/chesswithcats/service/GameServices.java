@@ -131,20 +131,20 @@ public class GameServices {
 	 * List of random players prioritized by last login, with preference towards those logged in but not actively playing.
 	 * Returns random player or null if no players can be found. 
 	 */
-	public Player findRandomOpponent(Player sender, GameStyle style) {
+	public Player findRandomOpponent(Player sender, GameStyle style){
 
-		List<Player> potentialOpponent = playerRepo.findTop20ByIsLoggedAndIsPlayingOrderByLastLoginDesc(true, false)
-				.orElse(playerRepo.findTop20ByOrderByLastLoginDesc().orElse(null));
+			List<Player> potentialOpponent = playerRepo.findTop20ByIsLoggedAndIsPlayingOrderByLastLoginDesc(true, false)
+					.orElse(playerRepo.findTop20ByOrderByLastLoginDesc().orElse(null));
 
-		if (potentialOpponent == null || potentialOpponent.size() == 1) {
-			return null;
-		}
+			if (potentialOpponent == null || potentialOpponent.size() == 1) {
+				return null;
+			}
 
-		potentialOpponent.remove(sender);
+			potentialOpponent.remove(sender);
 
-		Random rand = new Random();
-		int randIndex = rand.nextInt(potentialOpponent.size());
-		return potentialOpponent.get(randIndex);
+			Random rand = new Random();
+			int randIndex = rand.nextInt(potentialOpponent.size());
+			return potentialOpponent.get(randIndex);
 	}
 
 	/**

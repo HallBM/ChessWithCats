@@ -98,12 +98,19 @@ public class GameController {
 
 		Player sender = playerRepo.findByUsername(currentUser.getUsername());
 		Player receiver;
-
+		
+		if (gameReqRepo.existsBySenderUsernameAndReceiverUsernameAndStyle(
+				sender.getUsername(), gameReq.getOpponent(), gameReq.getStyle())) {
+			return "redirect:/games";
+		}
+		
+		
 		if (gameReq.getOpponent().equals("1")) {
 			
 			receiver = gameServ.findRandomOpponent(sender, gameReq.getStyle());
 
-			if (receiver == null) {
+			if (receiver == null || gameReqRepo.existsBySenderUsernameAndReceiverUsernameAndStyle(
+					sender.getUsername(), receiver.getUsername(), gameReq.getStyle())) {
 				return "redirect:/games";
 			}
 		
