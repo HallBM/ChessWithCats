@@ -194,9 +194,9 @@ public class FriendController {
 
 		String receiver = currentUser.getUsername();
 
-		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(receiver, sender);
+		int deletedRecords = friendReqRepo.deleteByUsernames(receiver, sender);
 
-		if (recordNumber != 1L) {
+		if (deletedRecords != 1) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
 
@@ -213,9 +213,9 @@ public class FriendController {
 			@AuthenticationPrincipal Player currentUser) {
 
 		String sender = currentUser.getUsername();
-		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(receiver, sender);
+		int deletedRecords = friendReqRepo.deleteByUsernames(receiver, sender);
 
-		if (recordNumber != 1L) {
+		if (deletedRecords != 1) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
 
@@ -252,13 +252,9 @@ public class FriendController {
 
 		String currentUsername = currentUser.getUsername();
 
-		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(friendUsername, currentUsername);
+		int deletedRecords = friendReqRepo.deleteByUsernames(friendUsername, currentUsername);
 
-		if (recordNumber == 0L) {
-			recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(currentUsername, friendUsername);
-		}
-
-		if (recordNumber != 1L) {
+		if (deletedRecords != 1) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
 
@@ -277,13 +273,9 @@ public class FriendController {
 
 		String currentUsername = currentUser.getUsername();
 
-		Long recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(friendUsername, currentUsername);
+		int deletedRecords = friendReqRepo.deleteByUsernames(friendUsername, currentUsername);
 
-		if (recordNumber == 0L) {
-			recordNumber = friendReqRepo.deleteByReceiverUsernameAndSenderUsername(currentUsername, friendUsername);
-		}
-
-		if (recordNumber != 1L) {
+		if (deletedRecords != 1) {
 			System.out.println("ERROR WITH FRIEND REQUEST DELETION");
 		}
 		return new ModelAndView("redirect:/friends");

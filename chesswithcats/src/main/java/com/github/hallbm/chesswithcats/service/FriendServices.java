@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.github.hallbm.chesswithcats.domain.FriendEnums.BlockedBy;
 import com.github.hallbm.chesswithcats.domain.FriendEnums.FriendRequestStatus;
 import com.github.hallbm.chesswithcats.model.FriendRequest;
 import com.github.hallbm.chesswithcats.model.Player;
@@ -60,17 +59,17 @@ public class FriendServices {
 	@Transactional
 	public Set<String> getBlockedUsernames (String currentUsername) {
 		List<FriendRequest> blockedFriendRequests =
-				friendReqRepo.findBySenderUsernameAndStatusAndBlockedBy(currentUsername, FriendRequestStatus.BLOCKED, BlockedBy.SENDER);
-		Set<String> blockedUsernames = blockedFriendRequests.stream()
-				.map(FriendRequest::getReceiver)
-				.map(Player::getUsername)
-				.collect(Collectors.toCollection(TreeSet::new));
-		blockedFriendRequests =
-				friendReqRepo.findByReceiverUsernameAndStatusAndBlockedBy(currentUsername, FriendRequestStatus.BLOCKED, BlockedBy.RECEIVER);
-		blockedUsernames.addAll(blockedFriendRequests.stream()
-				.map(FriendRequest::getSender)
-				.map(Player::getUsername)
-				.collect(Collectors.toSet()));
+				friendReqRepo.getBlockedByUsername(currentUsername);
+		
+		Set<String> blockedUsernames = new TreeSet<>();
+		
+		for (FriendRequest fr : blockedFriendRequests) {
+			blockedUsernames.add(fr.getSender().getUsername());
+			blockedUsernames.add(fr.getReceiver().getUsername());
+		}
+		
+		blockedUsernames.remove(currentUsername);
+		
 		return blockedUsernames;
 	}
 	
@@ -81,19 +80,16 @@ public class FriendServices {
 	public Set<String> getFriendUsernames (String currentUsername){
 
 		List<FriendRequest> acceptedFriendRequests =
-				friendReqRepo.findByReceiverUsernameAndStatus(currentUsername, FriendRequestStatus.ACCEPTED);
-		Set<String> friendUsernames = acceptedFriendRequests.stream()
-				.map(FriendRequest::getSender)
-				.map(Player::getUsername)
-				.collect(Collectors.toCollection(TreeSet::new));
-		acceptedFriendRequests =
-				friendReqRepo.findBySenderUsernameAndStatus(currentUsername, FriendRequestStatus.ACCEPTED);
-		friendUsernames.addAll(acceptedFriendRequests.stream()
-				.map(FriendRequest::getReceiver)
-				.map(Player::getUsername)
-				.collect(Collectors.toSet()));
-		return friendUsernames;
-
+				friendReqRepo.getByUsernameAndStatus(currentUsername, FriendRequestStatus.ACCEPTED.toString());
+		Set<String> friendsUsernames = new TreeSet<>();
+		
+		for (FriendRequest fr : acceptedFriendRequests) {
+			friendsUsernames.add(fr.getSender().getUsername());
+			friendsUsernames.add(fr.getReceiver().getUsername());
+		}
+		
+		friendsUsernames.remove(currentUsername);
+		return friendsUsernames;
 	}
 
 	/**
@@ -103,7 +99,7 @@ public class FriendServices {
 	@Transactional
 	public Set<String> getAllConnectionUsernamesAndSelf (String currentUsername){
 		List<FriendRequest> connections =
-				friendReqRepo.findByReceiverUsernameOrSenderUsername(currentUsername, currentUsername);
+				friendReqRepo.getByUsername(currentUsername);
 		Set<String> connectionUsernames = connections.stream()
 				.map(FriendRequest::getSender)
 				.map(Player::getUsername)
