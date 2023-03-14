@@ -47,6 +47,7 @@ public class Game implements Serializable {
     private long id;
 
 	@Column(length = 20)
+	@NotNull
 	@Enumerated(EnumType.STRING)
 	private GameStyle style;
 
