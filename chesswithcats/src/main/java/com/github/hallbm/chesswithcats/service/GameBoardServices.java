@@ -34,6 +34,9 @@ public final class GameBoardServices {
 	 * Mapping of column letter to PieceNotation[][] board index.
 	 */
 	private final static Map<Character, Integer> columnMap = new HashMap<>() {
+
+		private static final long serialVersionUID = 1L;
+
 		{
 			put('A', 0);
 			put('B', 1);
@@ -50,6 +53,9 @@ public final class GameBoardServices {
 	 * Mapping of row number to PieceNotation[][] board index.
 	 */
 	private final static Map<Character, Integer> rowMap = new HashMap<>() {
+
+		private static final long serialVersionUID = 1L;
+
 		{
 			put('1', 7);
 			put('2', 6);
