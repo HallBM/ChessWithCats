@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
-import com.github.hallbm.chesswithcats.model.FriendRequest;
 import com.github.hallbm.chesswithcats.model.GameRequest;
 import com.github.hallbm.chesswithcats.model.Player;
 
