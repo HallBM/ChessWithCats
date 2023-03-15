@@ -24,9 +24,6 @@ import com.github.hallbm.chesswithcats.model.Player;
 public class GameRepositoryTest {
 
 	@Autowired
-	private GameRequestRepository gameReqRepo;
-	
-	@Autowired
 	private PlayerRepository playerRepo;
 	
 	@Autowired
