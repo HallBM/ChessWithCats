@@ -5,6 +5,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <link rel="stylesheet" type="text/css" th:href="@{/CSS/chessboard.css}" />
 
 <link
@@ -14,10 +15,13 @@
 	src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
-
 </head>
 
 <body>
+<noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being
+    enabled. Please enable
+    Javascript and reload this page!</h2></noscript>
+
 	<div id="background" class="background">
 		<div class="gameboard">
 			<div id="chessboard" th:class="${color}">
@@ -55,7 +59,7 @@
 						style="font-size: 2vw; color: green; margin-left: 2vw"
 						class="fa fa-user-circle"></i>
 				</div>
-
+ 				<div id="status">Connecting...</div>
 			</div>
 			
 			<div id="rules" class="rule-display" style="overflow: auto; display: block; font-size: 2vw; background-color: lightblue">
@@ -87,7 +91,7 @@
 <div id="checkmate-popup" class="popup" style="display: none; justify-content: center; flex-direction: column;
     align-items: center;">
 		<img src="/Images/large_img_catsplayingchess/felix-mittermeier-nAjil1z3eLk-unsplash.jpg" style="width: 100%">
-		<span style="font-size: 3vw"><strong>Checkmate! You win!</strong></span>
+		<span style="font-size: 3vw"><strong id="outcome">Text here</strong></span>
 		
 </div>
 

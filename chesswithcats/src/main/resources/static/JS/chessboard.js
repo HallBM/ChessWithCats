@@ -1,5 +1,5 @@
 const [_, base, gameStyle, gameId, playerColor] = window.location.pathname.split("/");
-let pieceMap = JSON.parse(document.getElementById("pieceMapJson").innerHTML);
+const pieceMap = JSON.parse(document.getElementById("pieceMapJson").innerHTML);
 const chessboard = document.getElementById("chessboard");
 const isPlayerWhite = chessboard.classList.contains("render_white");
 
@@ -10,7 +10,10 @@ let catSquares = [];
 
 let isWhiteTurn = document.getElementById("turn").classList.contains("white-turn");
 let isWhitePlayer = playerColor == "white";
-let prevSq = "A1";
+
+let blackMoveHighlightSquareId = null;
+let whiteMoveHighlightSquareId = null;
+let tempMoveHighlightSquareId = null;
 
 const numbers = isPlayerWhite ? "87654321" : "12345678";
 const letters = isPlayerWhite ? "ABCDEFGH" : "HGFEDCBA";
@@ -140,16 +143,17 @@ function dragStart(event) {
 	event.dataTransfer.setData("text/plain", event.target.name);
 	event.target.classList.add("hide");
 
-	document.getElementById(prevSq).classList.remove("highlight");
+	if (tempMoveHighlightSquareId != null) {
+		document.getElementById(tempMoveHighlightSquareId).classList.remove("highlight");
+	}
 	document.getElementById(event.target.name).classList.add("highlight");
-	prevSq = event.target.name;
-
+	tempMoveHighlightSquareId = event.target.name;
 
 }
 
 document.addEventListener("dragend", function(event) {
 	const dropSuccessful = (event.dataTransfer.dropEffect !== "none");
-	const movedPiece = document.getElementsByName(prevSq)[0];
+	const movedPiece = document.getElementsByName(tempMoveHighlightSquareId)[0];
 
 	if (!dropSuccessful) {
 		movedPiece.classList.remove("hide");
@@ -168,7 +172,7 @@ async function drop(event) {
 	const endSquare = isEmptyEndSquare ? event.target : capturedPiece.parentElement;
 	const endSquarePosition = endSquare.id;
 
-	endSquare.classList.remove("drag-over");
+	event.target.classList.remove("drag-over");
 
 	const moveFailConditions =
 		(capturedPiece != null && capturedPiece.alt[1] == "k") ||
@@ -206,14 +210,19 @@ async function drop(event) {
 	})(move);
 
 	console.log(moveResponse.officialChessMove);
-	
+
 	movedPiece.classList.remove("hide");
-	
-	if (moveResponse.valid === false && moveResponse.officialChessMove === "") {
+
+	if (moveResponse.valid === false || moveResponse.officialChessMove === "") {
+		
 		return false;
 	}
 
+	makeMove(moveResponse);
+}
 
+function makeMove(moveResponse) {
+	let endSquare, movedPiece;
 
 	if (moveResponse.officialChessMove !== "XXX ") {
 		for (let move of moveResponse.pieceMoves) {
@@ -221,8 +230,8 @@ async function drop(event) {
 				const enPassantCapture = document.getElementById(move[0]);
 				enPassantCapture.removeChild(enPassantCapture.children[0]);
 			} else {
-				let endSquare = document.getElementById(move[1]);
-				let movedPiece = document.querySelector("img[name='" + move[0] + "']");
+				endSquare = document.getElementById(move[1]);
+				movedPiece = document.querySelector("img[name='" + move[0] + "']");
 
 				if (endSquare.hasChildNodes()) {
 					for (let child of endSquare.childNodes) {
@@ -232,15 +241,28 @@ async function drop(event) {
 						}
 					}
 				}
-
 				endSquare.appendChild(movedPiece);
 				movedPiece.name = move[1];
 			}
 		}
 
-		document.getElementById(prevSq).removeAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-		endSquare.setAttribute("style", "background-color: rgb(239, 208, 11, 0.5);");
-		prevSq = endSquarePosition;
+		if (tempMoveHighlightSquareId != null){
+			document.getElementById(tempMoveHighlightSquareId).classList.remove("highlight");
+		}
+		endSquare.classList.add("highlight");
+		tempMoveHighlightSquareId = endSquare.id;
+		
+		if (isWhiteTurn) {
+			if (whiteMoveHighlightSquareId != null) {
+				document.getElementById(whiteMoveHighlightSquareId).classList.remove("highlight");
+			} 
+			whiteMoveHighlightSquareId = endSquare.id;
+		} else {
+			if (blackMoveHighlightSquareId != null) {
+				document.getElementById(blackMoveHighlightSquareId).classList.remove("highlight");
+			} 
+			blackMoveHighlightSquareId = endSquare.id;
+		}
 	}
 
 	isWhiteTurn = !isWhiteTurn;
@@ -275,6 +297,8 @@ async function drop(event) {
 		document.getElementById("background").style.filter = "blur(5px)";
 		const popup = document.getElementById("checkmate-popup");
 		popup.style.display = "inline-flex";
+		const outcome = document.getElementById("outcome");
+		outcome.innerHTML = "Checkmate! You " + (!isWhiteTurn === isWhitePlayer ? "WIN" : "LOSE");
 
 		setTimeout(function() {
 			// Change the location of the current window to the new page
@@ -291,9 +315,6 @@ function hasSameColor(piece1, piece2) {
 function isDroppedOnEmptySquare(dropTarget) {
 	return dropTarget.id !== "";
 }
-
-
-
 
 function addObstructiveCats() {
 
@@ -369,7 +390,37 @@ function setSquareSets() {
 	allSquares = document.querySelectorAll(".square");
 }
 
-function displayGame() {
+const urlEndPoint = "http://localhost:8080/subscribe/" + gameId + "/" + (playerColor === "white" ? "black" : "white");
+const eventSource = new EventSource(urlEndPoint);
+
+eventSource.onopen = function() {
+	console.log("connection is established");
+	document.getElementById("status").innerHTML = "Real-time gameplay";
+};
+
+eventSource.onerror = function(event) {
+	console.log("connection state: " + eventSource.readyState + ", error: " + event);
+	console.log(event);
+	//document.getElementById("status").innerHTML = "Refresh to update";
+	//eventSource.close();
+};
+
+eventSource.onmessage = function(event) {
+	console.log(event.move);   //"id: ") + event.lastEventId + ", data: " + event.data);
+
+};
+
+eventSource.addEventListener("move", function(event) {
+	const moveResponse = JSON.parse(event.data);
+	makeMove(moveResponse);
+}, false);
+
+eventSource.addEventListener("close", function(event) {
+	eventSource.close();
+	console.log("closed");//'id: ' + event.lastEventId + ', data: ' + event.data);
+}, false);
+
+function enterGame() {
 	buildBoard();
 	convertPieceMap();
 	addGamePiecesWithDraggableFeatures(getPieceImgPath());
@@ -378,23 +429,4 @@ function displayGame() {
 	finalizeBoard();
 }
 
-displayGame();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+enterGame();

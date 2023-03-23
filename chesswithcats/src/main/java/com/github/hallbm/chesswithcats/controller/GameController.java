@@ -254,10 +254,12 @@ public class GameController {
 	 * (likely, given that all the pieces look the same and the player may have lost track of
 	 * what piece they are currently trying to move. User gets 3 attempts to make a move before their move is forfeited. 
 	 */
+	@Autowired MoveUpdateSSEController mUSSECont;
+	
 	@ResponseBody
 	@PostMapping("/game/move")
-	public ResponseEntity<MoveResponseDTO> getUserByUserName(@RequestBody MoveDTO moveDTO,
-			@AuthenticationPrincipal Player currentUser, HttpSession session) {
+	public ResponseEntity<MoveResponseDTO> validateAJAXMove(@RequestBody MoveDTO moveDTO,
+			@AuthenticationPrincipal Player currentUser, HttpSession session) throws JsonProcessingException{
 	
 		GamePlay gamePlay = gamePlayRepo.findByGameId(Long.parseLong(moveDTO.getGameId()));
 		MoveResponseDTO moveResponseDTO = gamePlayServ.validateMove(moveDTO, gamePlay).orElse(new MoveResponseDTO());
@@ -303,7 +305,14 @@ public class GameController {
 			gameRepo.save(activeGame);
 		}
 
+		if (moveResponseDTO.isValid()) {
+			ObjectMapper objectMapper = new ObjectMapper();
+			mUSSECont.sendMove(objectMapper.writeValueAsString(moveResponseDTO), moveDTO.getGameId(), gamePlay.getHalfMoves()%2 == 0 ? "white" : "black");
+		}
+		
 		return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.OK);
 	}
-
+	
+	
+	
 }
