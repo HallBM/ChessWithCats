@@ -2,12 +2,13 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
 	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
-<head th:insert="~{fragments/header.html}">
+<head>
+<div th:remove="tag" th:replace="~{fragments/head :: head}"></div>
 	<title>Chess With Cats!</title>
-	
+	<link th:href="@{/css/general.css}" rel="stylesheet"> 
 </head>
 <body>
-	<header th:replace="~{fragments/head.html}"></header>
+	<header th:replace="~{fragments/header.html}"></header>
   <main>
   	<section sec:authorize="isAuthenticated()" class="intro" style="margin-top: 11vh; margin-bottom:-10vh; padding: 1vh 0vh; width:100%; background-color: #dead7c; justify-content:center;" >
     <h2 th:text="'Welcome  '+${username}+'!'"></h2><br>

@@ -2,11 +2,13 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
 	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 
-<head th:insert="~{fragments/header.html}">
+<head>
+<div th:remove="tag" th:replace="~{fragments/head :: head}"></div>
 <title>Friends</title>
+<link th:href="@{/css/general.css}" rel="stylesheet"> 
 </head>
 <body>
-	<header th:replace="~{fragments/head.html}"></header>
+	<header th:replace="~{fragments/header.html}"></header>
 	<main>
 		<div class="container col-6" style="margin-top: 10vh;">
 			<div class="row">
