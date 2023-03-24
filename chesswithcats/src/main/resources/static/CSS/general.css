@@ -199,10 +199,6 @@ form h2{
     font-weight: bolder;
 }
 
-.space{
-    margin-right: 3vw;
-}
-
 .login{
     padding: 4vh 0;
     background-color: white;
@@ -211,11 +207,12 @@ form h2{
 }
 
 .icons{
+	display:flex;
     justify-content: space-evenly;
 }
 
 .icon-choice{
-    display: flex;
+    width: 13%;
     padding: 0;
     margin: 1vw 0;
     justify-content: center;
@@ -231,7 +228,7 @@ input[type=radio]{
 }
 
 label img{
-    width: 90%;
+    width: 100%;
     transition: all 0.3s ease-in-out;
 }
 

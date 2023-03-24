@@ -1,10 +1,11 @@
 document.addEventListener("DOMContentLoaded", function() {
     const username = document.getElementById("username");
     const msg = document.getElementById("msg");
+    const username_msg = document.getElementById("username-msg");
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
 	const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
     
-    username.addEventListener("focusout", function(e) {
+    username.addEventListener("focusout", function() {
         if (username.value == null || username.value == "") {
             msg.style.display = "none";
         } else {
@@ -28,7 +29,13 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
     
-    username.addEventListener("focus", function(e) {
-        setTimeout(function(){msg.style.display = "none";},750);
+    username.addEventListener("focus", function() {
+        setTimeout(function(){
+			msg.style.display = "none";
+			if (username_msg != null) {
+				username_msg.remove();
+			}
+		},750);
     });
+
 });
