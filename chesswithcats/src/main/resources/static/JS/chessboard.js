@@ -1,4 +1,6 @@
 const [_, base, gameStyle, gameId, playerColor] = window.location.pathname.split("/");
+const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 const pieceMap = JSON.parse(document.getElementById("pieceMapJson").innerHTML);
 const chessboard = document.getElementById("chessboard");
 const isPlayerWhite = chessboard.classList.contains("render_white");
@@ -200,8 +202,11 @@ async function drop(event) {
 			const response = await fetch("/game/move", {
 				method: "post",
 				body: JSON.stringify(move),
-				headers: { "Content-Type": "application/json; charset=utf-8" },
-				cache: "no-cache"
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    [header]: token
+                },
+                cache: "no-cache",
 			});
 			return await response.json();
 		} catch (error) {

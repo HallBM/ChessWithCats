@@ -15,7 +15,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 headers: {
                     "Content-Type": "application/json; charset=utf-8",
                     [header]: token
-                }
+                },
+                cache: "no-cache",
             })
             .then(response => response.json())
             .then(ifExists => {

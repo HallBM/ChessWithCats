@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+	const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+    
 	document.getElementById("delete-acct").addEventListener("click", function(event) {
 		event.preventDefault();
 		const masked = document.getElementsByClassName("mask");
@@ -23,8 +26,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
 		fetch("/delete-account", {
 			method: "POST",
-			headers: { "Content-Type": "application/json; charset=utf-8" },
-			cache: "no-cache",
+				headers: {
+					"Content-Type": "application/json; charset=utf-8",
+					[header]: token
+				},
+				cache: "no-cache",
 		})
 			.then(response => {
 				if (response.redirected) {
