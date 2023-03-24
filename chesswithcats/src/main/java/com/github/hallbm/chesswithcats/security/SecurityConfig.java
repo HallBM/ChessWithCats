@@ -23,8 +23,8 @@ public class SecurityConfig {
 	
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.csrf().disable().authorizeHttpRequests()
-	    .requestMatchers("/profile/**", 
+		http.authorizeHttpRequests()
+	    	.requestMatchers("/profile/**", 
 	    				"/game/**", 
 	    				"/games/**", 
 						"/gameRequest/**", 
@@ -34,7 +34,7 @@ public class SecurityConfig {
 	    				 "/block/**",
 	    				 "/unblock/**",
 	    				 "/delete-account").authenticated()
-	    .anyRequest().permitAll();
+	    	.anyRequest().permitAll();
 		
 		http.formLogin()
 			.loginPage("/login")
