@@ -43,6 +43,8 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
 			+ "WHERE (f.sender_username = :username1 AND f.receiver_username = :username2) OR "
 			+ "(f.sender_username = :username2 AND f.receiver_username = :username1)", nativeQuery = true)
 	public int deleteByUsernames(String username1, String username2);
+	
+	public boolean existsByReceiverUsernameAndStatus(String receiver, FriendRequestStatus status);
 
 
 }

@@ -1,24 +1,30 @@
-<header th:fragment="header" style="position:fixed; width: 100%">
-  <nav class="navbar navbar-expand-md bg-dark navbar-dark mb-3">
-  	<a class="navbar-brand" th:href="@{/}" style="margin-left: 2%;">
-      Chess With Cats!!!
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topNavbar">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="topNavbar" style="justify-content:right; margin-right: 2%;">
-      <ul class="navbar-nav" sec:authorize="isAuthenticated()">
-        <li class="nav-item"><a class="nav-link" th:href="@{/leaderboard}">Leader Board</a></li>
-		<li class="nav-item">
-		<a class="nav-link" th:href="@{/friends}">Friends<i class="fas fa-user-friends" style="font-size:1vw; color:white; margin-left: 1em; display:none"></i></a></li>
-		<li class="nav-item"><a class="nav-link" th:href="@{/games}">Games<i class="fas fa-chess" style="font-size:1vw; color:white; margin-left: 1em; display:none"></i></a></li>
-		<li class="nav-item"><a class="nav-link" th:href="@{/profile}">Profile</a></li>
-		<li class="nav-item"><a class="nav-link" th:href="@{/logout}">Logout</a></li>
-      </ul>
-        <ul class="navbar-nav" sec:authorize="!isAuthenticated()">
-        <li class="nav-item"><a class="nav-link" th:href="@{/login}">Login</a></li>
-        <li class="nav-item"><a class="nav-link" th:href="@{/register}">Sign Up</a></li>
-	  </ul>
-    </div>
-  </nav>
+<header th:fragment="header" style="position: fixed; width: 100%">
+	<nav class="navbar bg-dark navbar-dark">
+		<div class="navbar-brand" style="margin-left: 2%; display: flex; align-items: center;">
+			<a class="navbar-brand" th:href="@{/}"> Chess With Cats!!! </a>
+		</div>
+		<div style="margin-right: 2%;">
+			<ul class="navbar-nav flex-row justify-content-end"
+				sec:authorize="isAuthenticated()">
+				<li class="nav-item"><a class="nav-link"
+					th:href="@{/leaderboard}">Leader Board</a></li>
+				<li class="nav-item"><a class="nav-link position-relative"
+					th:href="@{/friends}">Friends 
+					<span th:if="${hasFriendRequests}"
+						class="position-absolute top-0 translate-end p-2 bg-danger border border-light rounded-circle"></span>
+				</a></li>
+				<li class="nav-item"><a class="nav-link position-relative"
+					th:href="@{/games}"> Games <span th:if="${hasGameRequests}"
+						class="position-absolute top-0 translate-end p-2 bg-danger border border-light rounded-circle"></span>
+				</a></li>
+				<li class="nav-item"><a class="nav-link" th:href="@{/profile}">Profile</a></li>
+				<li class="nav-item"><a class="nav-link" th:href="@{/logout}">Logout</a></li>
+			</ul>
+			<ul class="navbar-nav flex-row justify-content-end"
+				sec:authorize="!isAuthenticated()">
+				<li class="nav-item"><a class="nav-link" th:href="@{/login}">Login</a></li>
+				<li class="nav-item"><a class="nav-link" th:href="@{/register}">Sign Up</a></li>
+			</ul>
+		</div>
+	</nav>
 </header>
