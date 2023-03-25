@@ -15,5 +15,7 @@ public interface GameRequestRepository extends JpaRepository<GameRequest, Long>{
 	public void deleteById(Long id);
 	public boolean existsBySenderUsernameAndReceiverUsernameAndStyle(String sender, String receiver, GameStyle style);
 
+	public boolean existsByReceiverUsername(String receiver);
+	
 	public List<GameRequest> findBySenderAndStyle(Player sender, GameStyle style);
 }
