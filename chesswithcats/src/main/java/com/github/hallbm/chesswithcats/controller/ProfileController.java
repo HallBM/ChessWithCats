@@ -89,7 +89,7 @@ public class ProfileController {
 		model.addAttribute("dateJoined", other.getDateJoined());
 		model.addAttribute("accountDays", dayDisplay);
 		model.addAttribute("isEditable", false);
-		model.addAttribute("accountStatus", other.isActive()); 
+		model.addAttribute("accountStatus", other.isEnabled()); 
 
 		Map<GameStyle,Integer[]> dbResults = gameServ.getWinDrawLosePercentageByPlayer(username);
 		model.addAttribute("gameResults", dbResults);
@@ -97,7 +97,7 @@ public class ProfileController {
 		Map<GameStyle,Integer[]> matchResults = gameServ.getWinDrawLosePercentageByOpponents(currentUser.getUsername(), username);
 		model.addAttribute("matchResults", matchResults);
 
-		model.addAttribute("online", other.isLogged()); 
+		model.addAttribute("online", other.isOnline()); 
 		
 		return new ModelAndView("profile");
 	}
@@ -111,7 +111,7 @@ public class ProfileController {
 	@Transactional
 	@PostMapping("/delete-account")
 	public ModelAndView deleteAccount(Model model, @AuthenticationPrincipal Player currentUser) {
-		currentUser.setActive(false);
+		currentUser.setEnabled(false);
 		playerRepo.save(currentUser);
 		return new ModelAndView("redirect:/logout");
 	}

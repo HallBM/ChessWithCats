@@ -48,7 +48,7 @@ public class UserController {
 
 	@GetMapping("/login-success")
 	public String successfulLogin(@AuthenticationPrincipal Player currentUser) {
-		currentUser.setLogged(true);
+		currentUser.setOnline(true);
 		currentUser.setLastLogin(LocalDateTime.now());
 		playerRepo.save(currentUser);
 		return "redirect:/";

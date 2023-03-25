@@ -226,8 +226,8 @@ public class GameController {
 		model.addAttribute("turn", game.getGamePlay().getHalfMoves() % 2 == 0 ? "black-turn" : "white-turn");
 		model.addAttribute("whitePlayer", game.getWhite().getUsername());
 		model.addAttribute("blackPlayer", game.getBlack().getUsername());
-		model.addAttribute("whiteOnline", game.getWhite().isLogged());
-		model.addAttribute("blackOnline", game.getBlack().isLogged());
+		model.addAttribute("whiteOnline", game.getWhite().isOnline());
+		model.addAttribute("blackOnline", game.getBlack().isOnline());
 		model.addAttribute("moves", game.getGamePlay().getMoveString());
 		model.addAttribute("moves2", game.getGamePlay().getMoves().toString());
 
