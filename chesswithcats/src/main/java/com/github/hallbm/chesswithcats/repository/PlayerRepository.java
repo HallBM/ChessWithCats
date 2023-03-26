@@ -22,4 +22,8 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     public boolean existsByUsername(String username);
 
+    @Modifying
+    @Query("UPDATE Player p SET p.isOnline = false WHERE p.username = :username")
+    public void logoutPlayerByUsername(@Param("username") String username);
+
 }

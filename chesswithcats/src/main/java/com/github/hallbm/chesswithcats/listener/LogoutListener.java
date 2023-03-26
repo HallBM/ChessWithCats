@@ -21,9 +21,7 @@ public class LogoutListener implements ApplicationListener<LogoutSuccessEvent> {
     
     @Override
     public void onApplicationEvent(LogoutSuccessEvent event) {
-        String username = event.getAuthentication().getName();
-        Player player = playerRepo.findByUsername(username);
-        player.setOnline(false);
-        playerRepo.save(player);
+    	playerRepo.logoutPlayerByUsername(event.getAuthentication().getName());
     }
+    
 }
