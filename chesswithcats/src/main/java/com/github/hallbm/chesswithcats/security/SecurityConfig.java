@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import com.github.hallbm.chesswithcats.service.PlayerServices;
 
@@ -45,7 +46,10 @@ public class SecurityConfig {
 			.failureUrl("/login-fail")
 			.permitAll();
 			
-		http.logout()
+	    http.sessionManagement(session -> session.maximumSessions(1));
+	    http.sessionManagement(session -> session.invalidSessionUrl("/"));
+	    
+	    http.logout()
 			.logoutUrl("/logout")
 			.logoutSuccessUrl("/")
 			.invalidateHttpSession(true)
@@ -60,4 +64,9 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
+    @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+	
 }
