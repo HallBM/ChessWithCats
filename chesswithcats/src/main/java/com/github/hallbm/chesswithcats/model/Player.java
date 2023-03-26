@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.hibernate.annotations.NaturalId;
 import org.springframework.security.core.AuthenticatedPrincipal;
@@ -26,6 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Player/User data persistence; extends UserDetails and AuthenticatedPrincipal for Spring Security authorizations
@@ -35,6 +37,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 @Entity
 @Table(name = "players")
 public class Player implements UserDetails, AuthenticatedPrincipal {
@@ -104,4 +107,25 @@ public class Player implements UserDetails, AuthenticatedPrincipal {
 	public boolean isCredentialsNonExpired() {
 		return true;
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+	    if (this == o) return true;
+	    if (o == null || this.getClass() != o.getClass()) return false;
+	    Player other = (Player) o;
+	    return Objects.equals(id, other.getId()) &&
+	            Objects.equals(username, other.getUsername()) &&
+	            Objects.equals(iconFile, other.getIconFile()) &&
+	            Objects.equals(password, other.getPassword()) &&
+	            Objects.equals(firstName, other.getFirstName()) &&
+	            Objects.equals(lastName, other.getLastName()) &&
+	            Objects.equals(email, other.getEmail()) &&
+	            Objects.equals(dateJoined, other.getDateJoined());
+	}
+
+	@Override
+	public int hashCode() {
+	    return Objects.hash(id, username, iconFile, password, firstName, lastName, email, dateJoined);
+	}
+	
 }

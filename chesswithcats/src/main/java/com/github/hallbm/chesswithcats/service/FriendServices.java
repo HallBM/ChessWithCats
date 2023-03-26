@@ -1,5 +1,6 @@
 package com.github.hallbm.chesswithcats.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -71,6 +72,21 @@ public class FriendServices {
 		blockedUsernames.remove(currentUsername);
 		
 		return blockedUsernames;
+	}
+	
+	@Transactional
+	public Set<Player> getBlockedPlayers (String currentUsername) {
+		List<FriendRequest> blockedFriendRequests =
+				friendReqRepo.getByUsernameAndStatus(currentUsername,FriendRequestStatus.BLOCKED.toString());
+		
+		Set<Player> blockedPlayers = new HashSet<>();
+		
+		for (FriendRequest fr : blockedFriendRequests) {
+			blockedPlayers.add(fr.getSender());
+			blockedPlayers.add(fr.getReceiver());
+		}
+		
+		return blockedPlayers;
 	}
 	
 	/**

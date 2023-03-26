@@ -92,11 +92,10 @@ public class GameController {
 	 */
 	@PostMapping("/gameRequest")
 	public String handleGameRequest(Model model, @ModelAttribute("gameReq") GameRequestDTO gameReq,
-			BindingResult result, @AuthenticationPrincipal Player currentUser) throws SQLException {
+			BindingResult result, @AuthenticationPrincipal Player sender) throws SQLException {
 
 		GameRequest newReq = new GameRequest();
 
-		Player sender = playerRepo.findByUsername(currentUser.getUsername());
 		Player receiver;
 		
 		if (gameReqRepo.existsBySenderUsernameAndReceiverUsernameAndStyle(
@@ -104,13 +103,11 @@ public class GameController {
 			return "redirect:/games";
 		}
 		
-		
 		if (gameReq.getOpponent().equals("1")) {
 			
 			receiver = gameServ.findRandomOpponent(sender, gameReq.getStyle());
 
-			if (receiver == null || gameReqRepo.existsBySenderUsernameAndReceiverUsernameAndStyle(
-					sender.getUsername(), receiver.getUsername(), gameReq.getStyle())) {
+			if (receiver == null) {
 				return "redirect:/games";
 			}
 		

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,9 @@ public class GameServices {
 
 	@Autowired
 	private PlayerRepository playerRepo;
+	
+	@Autowired
+	private FriendServices friendServ;
 
 	/**
 	 * Returns GameRequestDTO created from pending gameRequests sent from @Param username for front end display 
@@ -133,18 +137,18 @@ public class GameServices {
 	 */
 	public Player findRandomOpponent(Player sender, GameStyle style){
 
-			List<Player> potentialOpponent = playerRepo.findTop20ByIsLoggedAndIsPlayingOrderByLastLoginDesc(true, false)
-					.orElse(playerRepo.findTop20ByOrderByLastLoginDesc().orElse(null));
-
-			if (potentialOpponent == null || potentialOpponent.size() == 1) {
-				return null;
-			}
-
+			Set<Player> potentialOpponent = playerRepo.findTop20ByOrderByLastLoginDesc();
 			potentialOpponent.remove(sender);
+			potentialOpponent.removeAll(friendServ.getBlockedPlayers(sender.getUsername()));
+			potentialOpponent.removeAll(gameReqRepo.getReceiverBySenderAndStyle(sender, style));
+			
+			if (potentialOpponent != null) {
+				for (Player p : potentialOpponent) {
+					return p;
+				}
+			} 
 
-			Random rand = new Random();
-			int randIndex = rand.nextInt(potentialOpponent.size());
-			return potentialOpponent.get(randIndex);
+			return null;
 	}
 
 	/**
