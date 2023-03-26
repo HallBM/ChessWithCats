@@ -46,8 +46,7 @@ public class SecurityConfig {
 			.failureUrl("/login-fail")
 			.permitAll();
 			
-	    http.sessionManagement(session -> session.maximumSessions(1));
-	    http.sessionManagement(session -> session.invalidSessionUrl("/"));
+	    http.sessionManagement().invalidSessionUrl("/login").maximumSessions(1).maxSessionsPreventsLogin(true);
 	    
 	    http.logout()
 			.logoutUrl("/logout")
@@ -68,5 +67,5 @@ public class SecurityConfig {
     HttpSessionEventPublisher httpSessionEventPublisher() {
         return new HttpSessionEventPublisher();
     }
-	
+    
 }

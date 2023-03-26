@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 import com.github.hallbm.chesswithcats.model.Player;
 
+import jakarta.transaction.Transactional;
+
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     public Player findByUsername(String username);
     public Player findByEmail(String email);
@@ -23,6 +25,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     public boolean existsByUsername(String username);
 
     @Modifying
+    @Transactional
     @Query("UPDATE Player p SET p.isOnline = false WHERE p.username = :username")
     public void logoutPlayerByUsername(@Param("username") String username);
 

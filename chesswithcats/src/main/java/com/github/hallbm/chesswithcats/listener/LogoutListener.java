@@ -5,7 +5,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
 import org.springframework.stereotype.Component;
 
-import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
 /**
