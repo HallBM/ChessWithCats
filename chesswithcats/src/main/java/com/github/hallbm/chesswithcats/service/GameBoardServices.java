@@ -169,25 +169,26 @@ public final class GameBoardServices {
 	}
 	
 	/**
-	 * Movement of chess pieces on the board
-	 * @Param PieceNotation[][] board;
-	 * @Param List<String[]> moves from moveResponseDTO; String[2] represents [startPos, endPos], e.g., ["A3","B4"]
-	 * @Param String promotionPiece from moveDTO to indicate what piece a pawn was promoted to
-	 * 
-	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap updated.
+	 * Simulated movement of chess pieces on a duplicated board
+	 * @param PieceNotation[][] currentBoard;
+	 * @param List<String[]> moves from moveResponseDTO; String[2] represents either [startPos, endPos] 
+	 * for any move (e.g., ["A2","A4"]) or represents [en passant capture position, null] for an en passant capture
+	 * (e.g., ["A4", null]). Normal moves (with or without capture) consist of 1 move. 
+	 * Special moves (castling, en passant) consist of 2 moves: 1) the side effect move (i.e., additional move of 
+	 * Rook for castling or removal of ep captured pawn) followed by 2) the original move made by the player. 
+	 * @param String promotionPiece from moveDTO to indicate which piece to replace the promoted pawn
+	 * @return PieceNotation[][] cloned board that has been updated with attempted move.
 	 */
-	public static void movePiece(PieceNotation[][] board, List<String[]> moves, String promotionPiece) {
-		int start_row;
-		int start_col;
-		int end_row;
-		int end_col;
+	public static PieceNotation[][] simulateMove(PieceNotation[][] currentBoard, List<String[]> moves, String promotionPiece){
+		PieceNotation[][] futureBoard = copyBoard(currentBoard);
+		int start_row, start_col, end_row, end_col;
 
 		for (String[] move : moves) {
 			start_row = getRow(move[0]);
 			start_col = getColumn(move[0]);
 
-			if (move[1] == null) { // en passant captured piece
-				board[start_row][start_col] = null;
+			if (move[1].equals("ep")) { // en passant captured piece
+				futureBoard[start_row][start_col] = null;
 				continue;
 			}
 
@@ -195,37 +196,35 @@ public final class GameBoardServices {
 			end_col = getColumn(move[1]);
 
 			if (promotionPiece != null) {
-				board[end_row][end_col] = null;
-				board[end_row][end_col] = PieceNotation.valueOf(promotionPiece);
-				board[start_row][start_col] = null;
-
+				futureBoard[end_row][end_col] = PieceNotation.valueOf(promotionPiece);
+				futureBoard[start_row][start_col] = null;
 			} else {
-				board[end_row][end_col] = null;
-				board[end_row][end_col] = board[start_row][start_col];
-				board[start_row][start_col] = null;
+				futureBoard[end_row][end_col] = futureBoard[start_row][start_col];
+				futureBoard[start_row][start_col] = null;
 			}
 		}
+		return futureBoard;
 	}
-	
+		
 	/**
-	 * Movement of chess pieces on the board
-	 * @Param GameBoard
-	 * @Param List<String[]> moves from moveResponseDTO; String[2] represents [startPos, endPos], e.g., ["A3","B4"]
-	 * @Param String promotionPiece from moveDTO to indicate what piece a pawn was promoted to
-	 * 
+	 * Movement of chess pieces on the persisted board
+	 * @Param GameBoard provides PieceNotation[][] board and HashMap<String,PieceNotation> pieceMap to be updated
+	 * @param List<String[]> moves from moveResponseDTO; String[2] represents either [startPos, endPos] 
+	 * for any move (e.g., ["A2","A4"]) or represents [en passant capture position, null] for an en passant capture
+	 * (e.g., ["A4", null]). Normal moves (with or without capture) consist of 1 move. 
+	 * Special moves (castling, en passant) consist of 2 moves: 1) the side effect move (i.e., additional move of 
+	 * Rook for castling or removal of ep captured pawn) followed by 2) the original move made by the player. 
+	 * @param String promotionPiece from moveDTO to indicate which piece to replace the promoted pawn
 	 * PieceNotation [][] board and HashMap<String,PieceNotation> pieceMap updated.
 	 */
 	public static void movePiece(GameBoard board, List<String[]> moves, String promotionPiece) {
-		int start_row;
-		int start_col;
-		int end_row;
-		int end_col;
+		int start_row, start_col, end_row, end_col;
 
 		for (String[] move : moves) {
 			start_row = getRow(move[0]);
 			start_col = getColumn(move[0]);
 
-			if (move[1] == null) { // en passant captured piece
+			if (move[1].equals("ep")) { // en passant capture
 				board.getBoard()[start_row][start_col] = null;
 				board.getPieceMap().remove(move[0]);
 				continue;
@@ -235,14 +234,12 @@ public final class GameBoardServices {
 			end_col = getColumn(move[1]);
 
 			if (promotionPiece != null) {
-				board.getBoard()[end_row][end_col] = null;
 				board.getBoard()[end_row][end_col] = PieceNotation.valueOf(promotionPiece);
 				board.getBoard()[start_row][start_col] = null;
 
 				board.getPieceMap().remove(move[0]);
 				board.getPieceMap().put(move[1], board.getBoard()[end_row][end_col]);
 			} else {
-				board.getBoard()[end_row][end_col] = null;
 				board.getBoard()[end_row][end_col] = board.getBoard()[start_row][start_col];
 				board.getBoard()[start_row][start_col] = null;
 
@@ -251,7 +248,7 @@ public final class GameBoardServices {
 			}
 		}
 	}
-
+	
 	/**
 	 * Iterates over PieceNotation[][] board to find king of an indicated color ("K" = white king, "k" = black king)
 	 * Returns array of row index and column index of indicated king.
@@ -281,12 +278,35 @@ public final class GameBoardServices {
 			newBoard[i] = Arrays.copyOf(board[i], 8);
 		}
 		
-		for (int i =0; i<8; i++) {
-			for (int j=0; j<8; j++) {
-				System.out.println(board[i][j] != null ? (board[i][j].toString() + newBoard[i][j].toString()) : "empty");
+		return newBoard;
+	}
+	
+	public static StringBuilder getFenPositions(PieceNotation[][] board) {
+		StringBuilder fenPos = new StringBuilder(100);
+		int emptyCount = 0;
+
+		for (int row = 0; row <8; row++) {
+			emptyCount = 0;
+			for (int col = 0; col < 8; col++) {
+				if(board[row][col] == null) {
+					emptyCount++;
+				} else {
+					if (emptyCount != 0) {
+						fenPos.append(String.valueOf(emptyCount));
+						emptyCount = 0;
+					}
+					fenPos.append(board[row][col].toString());
+				}
+
+				if (col == 7 && emptyCount !=0) {
+					fenPos.append(String.valueOf(emptyCount));
+				}
+			}
+
+			if (row > 0) {
+				fenPos.append("/");
 			}
 		}
-		
-		return newBoard;
+		return fenPos;
 	}
 }

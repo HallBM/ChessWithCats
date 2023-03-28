@@ -3,7 +3,6 @@ package com.github.hallbm.chesswithcats.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 
 import lombok.AllArgsConstructor;
@@ -21,17 +20,9 @@ import lombok.Setter;
 @AllArgsConstructor
 public class MoveResponseDTO {
 	
-	private boolean isValid = false;
-	private List<ChessMove> chessMoves = new ArrayList<>();
 	private List<String[]> pieceMoves = new ArrayList<>();
-	private String officialChessMove = "";
-	private boolean isChecked;
+	private String moveNotation = "";
 	private GameOutcome gameOutcome;
-
-	
-	public void addChessMove (ChessMove chessMove) {
-		chessMoves.add(chessMove);
-	}
 	
 	public void addPieceMove(String[] move) {
 		pieceMoves.add(move);

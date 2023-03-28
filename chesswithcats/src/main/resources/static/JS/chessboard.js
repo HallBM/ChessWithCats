@@ -190,36 +190,40 @@ async function drop(event) {
 
 	const move = {
 		gameId: gameId,
-		gameStyle: gameStyle,
-		isChecked: null,
 		promotionPiece: promotionPiece,
 		startPos: startSquarePosition,
 		endPos: endSquarePosition
 	};
 
-	const moveResponse = await (async function(move) {
-		try {
-			const response = await fetch("/game/move", {
-				method: "post",
-				body: JSON.stringify(move),
-                headers: {
-                    "Content-Type": "application/json; charset=utf-8",
-                    [header]: token
-                },
-                cache: "no-cache",
-			});
-			return await response.json();
-		} catch (error) {
+	const moveResponse = await fetch("/game/move", {
+		method: "post",
+		body: JSON.stringify(move),
+		headers: {
+			"Content-Type": "application/json; charset=utf-8",
+			[header]: token
+		},
+		cache: "no-cache",
+	})
+		.then(response => {
+			if (response.status === 200) {
+				return response.json();
+			} else if (response.status === 409) {
+				throw new Error("Invalid move. Try again.");
+			} else {
+				throw new Error("Unexpected error occured");
+			}
+		})
+		.catch(error => {
 			console.error(error);
-		}
-	})(move);
-
-	console.log(moveResponse.officialChessMove);
+			return null;
+		});
+				
+	console.log(moveResponse);
 
 	movedPiece.classList.remove("hide");
 
-	if (moveResponse.valid === false || moveResponse.officialChessMove === "") {
-		
+	if (moveResponse === null) {
+		console.log("null response");
 		return false;
 	}
 
@@ -229,9 +233,9 @@ async function drop(event) {
 function makeMove(moveResponse) {
 	let endSquare, movedPiece;
 
-	if (moveResponse.officialChessMove !== "XXX ") {
+	if (moveResponse.moveNotation !== "XXX ") {
 		for (let move of moveResponse.pieceMoves) {
-			if (move[1] == null) {
+			if (move[1] === "ep") {
 				const enPassantCapture = document.getElementById(move[0]);
 				enPassantCapture.removeChild(enPassantCapture.children[0]);
 			} else {
@@ -293,7 +297,7 @@ function makeMove(moveResponse) {
 		document.getElementById("turn-text").innerHTML = "Black to Move";
 	}
 
-	document.getElementById("move-display").innerHTML += moveResponse.officialChessMove;
+	document.getElementById("move-display").innerHTML += moveResponse.moveNotation;
 
 	document.getElementById("rules").style.display = "none";
 	document.getElementById("history").style.display = "block";
@@ -416,8 +420,13 @@ eventSource.onmessage = function(event) {
 };
 
 eventSource.addEventListener("move", function(event) {
+	
+	if (event.data === null){
+		return;
+	}	
 	const moveResponse = JSON.parse(event.data);
 	makeMove(moveResponse);
+
 }, false);
 
 eventSource.addEventListener("close", function(event) {

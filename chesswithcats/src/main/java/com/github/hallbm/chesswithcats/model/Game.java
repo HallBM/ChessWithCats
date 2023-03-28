@@ -1,10 +1,13 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 
+import com.github.hallbm.chesswithcats.domain.AmbiguousMoveValidator;
+import com.github.hallbm.chesswithcats.domain.DefiantMoveValidator;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
+import com.github.hallbm.chesswithcats.domain.MoveValidator;
+import com.github.hallbm.chesswithcats.domain.ObstructiveMoveValidator;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,9 +21,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -38,13 +43,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "games")
-public class Game implements Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class Game{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
 	@Column(length = 20)
 	@NotNull
@@ -56,6 +59,8 @@ public class Game implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private GameOutcome outcome = GameOutcome.ACCEPTED;
 	
+	@Column(length = 30)
+	@Size(max=30)
 	private String winner = null;
 
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -73,19 +78,27 @@ public class Game implements Serializable {
 	@Temporal(TemporalType.DATE)
 	private LocalDate acceptDate = LocalDate.now();
 
-	@Column
-	@NotNull
-	private boolean opponentIsHuman = true;
-
-	@OneToOne(mappedBy = "game", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-	private GamePlay gamePlay = new GamePlay();
+	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	private GamePlay gamePlay;
 
 	@Column(length = 64, updatable = false, nullable = false)
 	@NotNull
 	@Size(max = 64)
 	private String openingFen;
 
-	@Column(name="moves", length = 3072)
+	@Column(name = "full_move_history", length = 3072)
 	private String moves = null;
-
+	
+	@Transient
+	private MoveValidator moveValidator;
+	
+	@PostLoad
+	public void setValidator(){
+		switch(style) {
+		case OBSTRUCTIVE -> moveValidator = new ObstructiveMoveValidator();
+		case DEFIANT -> moveValidator = new DefiantMoveValidator();
+		case AMBIGUOUS -> moveValidator = new AmbiguousMoveValidator();
+		case CLASSIC -> moveValidator = new MoveValidator();
+		}
+	}
 }

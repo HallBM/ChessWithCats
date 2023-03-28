@@ -16,8 +16,6 @@ import lombok.Setter;
 public class MoveDTO {
 
 	private String gameId;
-	private String gameStyle;
-	private String isChecked;
 	private String promotionPiece;
 	private String startPos;
 	private String endPos;

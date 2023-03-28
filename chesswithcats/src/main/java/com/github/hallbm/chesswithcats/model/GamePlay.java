@@ -1,12 +1,12 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
+import com.github.hallbm.chesswithcats.service.GameBoardServices;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -18,9 +18,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -46,54 +45,50 @@ public class GamePlay {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
+	private Long id;
+	
+	@NotNull
+	private Short halfMoves = 1;
 
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "game_id", referencedColumnName = "id")
-	private Game game;
-
-	@Column(name = "half_moves")
-	private short halfMoves = 1;
-
-	@Column(name = "fifty_move_clock")
-	private byte fiftyMoveClock = 0;
+	@NotNull
+	private Byte fiftyMoveClock = 0;
 
 	@Column(name = "en_passant", length = 2)
 	@Size(max = 2)
 	private String enPassantTargetSquare = null;
 
 	@Column(length = 4)
-	@Size(min = 0, max = 4)
+	@Size(max = 4)
 	private String castling = "KQkq";
 
-	@Lob
 	@Embedded
 	private GameBoard gameBoard = new GameBoard();
 
-	private GameColor isChecked;
+	private Boolean isChecked = false;
 
 	@ElementCollection(fetch = FetchType.EAGER)
-	@CollectionTable(name = "fen_set")
+	@CollectionTable(name = "fen")
 	@Column(length = 100)
 	@JoinColumn(name = "game_plays_id", referencedColumnName = "id")
 	@OnDelete(action = OnDeleteAction.CASCADE)
-	private Set<String> fenSet = new HashSet<>();
+	private List<String> fenList = new ArrayList<>();
 
 	@Column(length = 3072)
 	private StringBuffer moves = new StringBuffer();
 
-	@Column(length = 3072)
-	private String moveString = new String();
-
+	@Column(length = 30)
+	private String drawRequestedBy; 
+	
 	public String updateFenSet() {
-		String fen = gameBoard.getFenPositions() + " " + (halfMoves % 2 == 1 ? "w" : "b") + " "
+		String fen = GameBoardServices.getFenPositions(gameBoard.getBoard()) + " " 
+				+ (halfMoves % 2 == 1 ? "w" : "b") + " "
 				+ (castling.equals("") ? "-" : castling) + " "
 				+ (enPassantTargetSquare == null ? "-" : enPassantTargetSquare) + " "
 				+ String.valueOf(fiftyMoveClock) + " " + String.valueOf((halfMoves - 1) / 2 + 1);
-		fenSet.add(fen);
+		fenList.add(fen);
 		return fen;
 	}
-
+	
 	public void incrementHalfMoves() {
 		halfMoves++;
 	}
@@ -107,12 +102,15 @@ public class GamePlay {
 	}
 
 	public void addMove(String newMove) {
-		moveString += newMove;
 		moves.append(newMove);
 	}
 
 	public void removeCastling(String castle) {
-		castling.replace(castle, "");
-	}
+		castling = castling.replace(castle, "");
 
+		if (castling.equals(""))
+			castling = null;
+	}
+	
+	
 }

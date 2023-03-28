@@ -6,5 +6,4 @@ import com.github.hallbm.chesswithcats.model.GamePlay;
 
 public interface GamePlayRepository extends JpaRepository<GamePlay, Long>{
 
-	public GamePlay findByGameId(Long gameId);
 }

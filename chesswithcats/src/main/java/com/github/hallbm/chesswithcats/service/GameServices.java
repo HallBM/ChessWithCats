@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,21 +14,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
+import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameWLD;
+import com.github.hallbm.chesswithcats.domain.GameEnums.PieceType;
+import com.github.hallbm.chesswithcats.domain.MoveValidator;
 import com.github.hallbm.chesswithcats.dto.GameDTO;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
+import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.Game;
+import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.model.GameRequest;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
+import jakarta.transaction.Transactional;
+
 /**
- * Services associated with CRUD for GameRequests long-term persisted Games. 
+ * Services associated with CRUD for GameRequests long-term persisted Games.
  */
 
 @Service
@@ -43,12 +49,13 @@ public class GameServices {
 
 	@Autowired
 	private PlayerRepository playerRepo;
-	
+
 	@Autowired
 	private FriendServices friendServ;
 
 	/**
-	 * Returns GameRequestDTO created from pending gameRequests sent from @Param username for front end display 
+	 * Returns GameRequestDTO created from pending gameRequests sent from @Param
+	 * username for front end display
 	 */
 	public List<GameRequestDTO> getReceivedGameRequestDTOs(String username) {
 		List<GameRequest> receivedList = gameReqRepo.findByReceiverUsernameOrderByStyleAscCreatedAtDesc(username);
@@ -56,9 +63,10 @@ public class GameServices {
 				.collect(Collectors.toList());
 		return receivedListDTO;
 	}
-	
+
 	/**
-	 * Returns GameRequestDTO created from pending gameRequests sent by @Param username for front end display
+	 * Returns GameRequestDTO created from pending gameRequests sent by @Param
+	 * username for front end display
 	 */
 	public List<GameRequestDTO> getSentGameRequestDTOs(String username) {
 		List<GameRequest> pendingList = gameReqRepo.findBySenderUsernameOrderByStyleAscCreatedAtDesc(username);
@@ -68,7 +76,8 @@ public class GameServices {
 	}
 
 	/**
-	 * Returns GameDTO created from active games with @Param username listed as a player for front end display
+	 * Returns GameDTO created from active games with @Param username listed as a
+	 * player for front end display
 	 */
 	public List<GameDTO> getActiveGameDTOs(String username) {
 		List<Game> activeList = gameRepo.getActiveByUsername(username);
@@ -76,9 +85,10 @@ public class GameServices {
 				.collect(Collectors.toList());
 		return activeListDTO;
 	}
-	
+
 	/**
-	 * Returns GameDTO created from completed games with @Param username listed as a player for front end display
+	 * Returns GameDTO created from completed games with @Param username listed as a
+	 * player for front end display
 	 */
 	public List<GameDTO> getCompletedGameDTOs(String username) {
 		List<Game> completedList = gameRepo.getCompleteByUsername(username);
@@ -88,7 +98,7 @@ public class GameServices {
 	}
 
 	/**
-	 * Helper function for converting persisted GameRequest into GameRequestDTO 
+	 * Helper function for converting persisted GameRequest into GameRequestDTO
 	 */
 	private GameRequestDTO createGameRequestDTO(GameRequest gameReq, String username) {
 
@@ -102,7 +112,7 @@ public class GameServices {
 	}
 
 	/**
-	 * Helper function for converting persisted Game into GameDTO 
+	 * Helper function for converting persisted Game into GameDTO
 	 */
 	private GameDTO createGameDTO(Game game, String username) {
 
@@ -131,33 +141,31 @@ public class GameServices {
 	}
 
 	/**
-	 * Method for matching user with a random player.
-	 * List of random players prioritized by last login, with preference towards those logged in but not actively playing.
-	 * Returns random player or null if no players can be found. 
+	 * Method for matching user with a random player. List of random players
+	 * prioritized by last login, with preference towards those logged in but not
+	 * actively playing. Returns random player or null if no players can be found.
 	 */
-	public Player findRandomOpponent(Player sender, GameStyle style){
+	public Player findRandomOpponent(Player sender, GameStyle style) {
 
-			Set<Player> potentialOpponent = playerRepo.findTop20ByOrderByLastLoginDesc();
-			potentialOpponent.remove(sender);
-			potentialOpponent.removeAll(friendServ.getBlockedPlayers(sender.getUsername()));
-			potentialOpponent.removeAll(gameReqRepo.getReceiverBySenderAndStyle(sender, style));
-			
-			if (potentialOpponent != null) {
-				for (Player p : potentialOpponent) {
-					return p;
-				}
-			} 
+		Set<Player> potentialOpponent = playerRepo.findTop20ByOrderByLastLoginDesc();
+		potentialOpponent.remove(sender);
+		potentialOpponent.removeAll(friendServ.getBlockedPlayers(sender.getUsername()));
+		potentialOpponent.removeAll(gameReqRepo.getReceiverBySenderAndStyle(sender, style));
 
-			return null;
+		if (potentialOpponent != null) {
+			for (Player p : potentialOpponent) {
+				return p;
+			}
+		}
+
+		return null;
 	}
 
 	/**
-	 * Method for forfeiting game.
-	 * If no moves are made, game is simply deleted.
-	 * Otherwise, game outcome updated as 'resignation', and 
-	 * player requesting forfeit take a loss, and opponent take a win.
+	 * Method for forfeiting game. If no moves are made, game is simply deleted.
+	 * Otherwise, game outcome updated as 'resignation', and player requesting
+	 * forfeit take a loss, and opponent take a win.
 	 */
-	@Modifying
 	public void forfeitGame(Long id, String username) {
 		Game activeGame = gameRepo.findById(id).get();
 
@@ -172,42 +180,39 @@ public class GameServices {
 				activeGame.setWinner(activeGame.getWhite().getUsername());
 			}
 
-			activeGame.setMoves(activeGame.getGamePlay().getMoveString());
+			activeGame.setMoves(activeGame.getGamePlay().getMoves().toString());
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
 		}
 	}
-	
+
 	/**
-	 * Method for draw of game.
-	 * TODO Game currently forces acceptance of a draw request from the opponent, but
-	 * need to implement logic for draw to be accepted. Also, need to implement other
-	 * methods for reaching a draw, like stalemate, 50 move rule, etc.
+	 * Method for draw of game. TODO Game currently forces acceptance of a draw
+	 * request from the opponent, but need to implement logic for draw to be
+	 * accepted. Also, need to implement other methods for reaching a draw, like
+	 * stalemate, 50 move rule, etc.
 	 */
-	@Modifying
 	public void drawGame(Long id, String username) {
 		Game activeGame = gameRepo.findById(id).get();
 		activeGame.setOutcome(GameOutcome.AGREEMENT);
 		activeGame.setWinner("Draw");
-		activeGame.setMoves(activeGame.getGamePlay().getMoveString());
+		activeGame.setMoves(activeGame.getGamePlay().getMoves().toString());
 		activeGame.setGamePlay(null);
 		gameRepo.save(activeGame);
 	}
 
 	/**
-	 * Method creating game from a game request.
-	 * Persists newly created game and deletes game request used to make game.
-	 * Returns new game.
+	 * Method creating game from a game request. Persists newly created game and
+	 * deletes game request used to make game. Returns new game.
 	 */
-	@Modifying
-	public Game createGameFromRequest(Long requestId, GameStyle style, String opponentUsername) {
+	public Game createGameFromRequest(Long requestId) {
 
 		Game newGame = new Game();
-		newGame.getGamePlay().setGame(newGame);
 
 		GameRequest gameReq = gameReqRepo.findById(requestId).get();
 		newGame.setStyle(gameReq.getStyle());
-
+		newGame.setGamePlay(new GamePlay());
+		
 		double randNum = Math.random();
 
 		if (randNum < 0.5) {
@@ -218,7 +223,8 @@ public class GameServices {
 			newGame.setBlack(gameReq.getSender());
 		}
 
-		// TODO only include if opponent is not human: newGame.setOpponentIsHuman(false);
+		// TODO only include if opponent is not human:
+		// newGame.setOpponentIsHuman(false);
 
 		GameBoardServices.setupGameBoard(newGame);
 		String openingFen = newGame.getGamePlay().updateFenSet();
@@ -231,28 +237,30 @@ public class GameServices {
 	}
 
 	/**
-	 * Method for generating game statistics for user's own profile page.
-	 * Calculates Total games, and Win,Lose,Draw percentages of completed games for user
-	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 * Method for generating game statistics for user's own profile page. Calculates
+	 * Total games, and Win,Lose,Draw percentages of completed games for user
+	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%,
+	 * Draw%, Lose%]
 	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByPlayer(String username) {
 		return getWinDrawLosePercentage(gameRepo.getCompleteByUsernameOrderByStyle(username), username);
 	}
-	
+
 	/**
 	 * Method for generating game statistics for other user's profile page.
-	 * Calculates Total games, and Win,Lose,Draw percentages of completed games
-	 * in which both indicated users have played against each other
-	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 * Calculates Total games, and Win,Lose,Draw percentages of completed games in
+	 * which both indicated users have played against each other Returns HashMap of
+	 * GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
 	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentageByOpponents(String currentUsername, String username2) {
 		return getWinDrawLosePercentage(gameRepo.getCompleteByOpponentsOrderByStyle(currentUsername, username2),
 				currentUsername);
 	}
-	
+
 	/**
 	 * Helper function for calculating total games, and win,lose,draw percentages.
-	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%, Draw%, Lose%]
+	 * Returns HashMap of GameStyle and an integer array of [Total games, Win%,
+	 * Draw%, Lose%]
 	 */
 	public Map<GameStyle, Integer[]> getWinDrawLosePercentage(List<Game> databaseResults, String currentUsername) {
 
@@ -283,12 +291,14 @@ public class GameServices {
 		}
 		return stats;
 	}
-	
+
 	/**
-	 * Method for calculating leaderboard stats, i.e., top 5 players for a given game style.
-	 * Player scores calculated by total wins minus total losses per game style (WIN +1, DRAW 0, LOSS -1). 
-	 * @Param GameStyle 
-	 * Returns an ArrayList of up to 5 Object[], representing [Player, score]
+	 * Method for calculating leaderboard stats, i.e., top 5 players for a given
+	 * game style. Player scores calculated by total wins minus total losses per
+	 * game style (WIN +1, DRAW 0, LOSS -1).
+	 * 
+	 * @Param GameStyle Returns an ArrayList of up to 5 Object[], representing
+	 *        [Player, score]
 	 */
 	public List<Object[]> getTopPlayers(GameStyle style) {
 		List<Game> games = gameRepo.getWonOrLostGamesByStyle(style.toString()).orElse(null);
@@ -337,5 +347,63 @@ public class GameServices {
 
 		return ranking;
 
+	}
+
+	/**
+	 * Game controller will evaluate response of the above function, and if valid,
+	 * will call this function to finalize game state and persist move and effects:
+	 * Pieces moved within board of persisted gameplay object. Official chess move
+	 * added to gameplay object. 50 move clock reset if pawn moved or if capture
+	 * occurred. FEN updated in gameplay. Move count incremented. GamePlay object
+	 * saved.
+	 */
+	@Modifying
+	@Transactional
+	public void finalizeAndSaveGameState(Game game, MoveResponseDTO moveResponseDTO, String promotedPiece) {
+
+		GamePlay gamePlay = game.getGamePlay();
+		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), promotedPiece);
+		MoveValidator moveVal = game.getMoveValidator();
+
+
+		if (gamePlay.getHalfMoves() == 2) {
+			game.setOutcome(GameOutcome.INCOMPLETE);
+		}
+
+		boolean isCaptureMove = moveVal.getChessMoves().contains(ChessMove.CAPTURE);
+		boolean isPawnMove = moveResponseDTO.getMoveNotation().toLowerCase().startsWith("p");
+
+		if (isCaptureMove || isPawnMove) {
+			gamePlay.resetFiftyMoveClock();
+		} else {
+			gamePlay.incrementFiftyMoveClock();
+		}
+
+		if (gamePlay.getCastling() != null) {
+			if (moveVal.getMovedPiece().getType() == PieceType.KING) {
+				if (moveVal.isWhiteMove()) {
+					gamePlay.removeCastling("Q");
+					gamePlay.removeCastling("K");
+				} else {
+					gamePlay.removeCastling("q");
+					gamePlay.removeCastling("k");
+				}
+			} else if (moveVal.getMovedPiece().getType() == PieceType.ROOK) {
+				switch (game.getMoveValidator().getStartPos()) {
+				case "A1" -> gamePlay.removeCastling("Q");
+				case "H1" -> gamePlay.removeCastling("K");
+				case "A8" -> gamePlay.removeCastling("q");
+				case "H8" -> gamePlay.removeCastling("k");
+				}
+			}
+		}
+
+		gamePlay.setEnPassantTargetSquare(moveVal.getNextEnPassantTargetSquare());
+		
+		gamePlay.addMove(moveResponseDTO.getMoveNotation()); 
+		gamePlay.incrementHalfMoves();
+		gamePlay.updateFenSet();
+
+		gameRepo.save(game);
 	}
 }

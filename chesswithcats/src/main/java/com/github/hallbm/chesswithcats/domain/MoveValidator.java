@@ -1,5 +1,8 @@
 package com.github.hallbm.chesswithcats.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
@@ -10,196 +13,160 @@ import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.service.GameBoardServices;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
- * Class validates attempted move based on given game state (gamePlay) and attempted move (moveDTO)
- * which are passed in to the constructor.
- *  
- * Constructor expands variables inferred from moveDTO (row/col number, calculated displacement),
- * and creates deep copy of chess board from gamePlay (PieceNotation [][]) to 
- * simulate game move and evaluate check/checkmate/stalemate without affecting stored gameboard.
+ * Class validates attempted move based on given game state (gamePlay) and
+ * attempted move (moveDTO) which are passed in to the constructor.
  * 
- * 'validate' method as an entry point into the validator; interprets and coordinates flow
- * through available methods based on game piece moved. Returns MoveResponseDTO object populated with fields, 
- * or if move is invalid returns a new MoveResponseDTO object where the 'isValidMove' boolean is set to false
- * to be interpreted by game controller.
+ * Constructor expands variables inferred from moveDTO (row/col number,
+ * calculated displacement), and creates deep copy of chess board from gamePlay
+ * (PieceNotation [][]) to simulate game move and evaluate
+ * check/checkmate/stalemate without affecting stored gameboard.
  * 
- * MoveValidator used for classic chess game. This class extended by other validators to
- * override methods in order to implement new chess rules.
+ * 'validate' method as an entry point into the validator; interprets and
+ * coordinates flow through available methods based on game piece moved. Returns
+ * MoveResponseDTO object populated with fields, or if move is invalid returns a
+ * new MoveResponseDTO object where the 'isValidMove' boolean is set to false to
+ * be interpreted by game controller.
+ * 
+ * MoveValidator used for classic chess game. This class extended by other
+ * validators to override methods in order to implement new chess rules.
  * 
  */
 
+@Getter
+@Setter
 public class MoveValidator {
 
-	protected GamePlay gamePlay;
-	protected MoveDTO moveDTO;
 	protected MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
+	protected GamePlay gamePlay;
+	protected List<ChessMove> chessMoves = new ArrayList<>();
 
 	protected String startPos, endPos;
 	protected int startRow, endRow, startCol, endCol;
 	protected int colDisplacement, rowDisplacement, absRowDisp, absColDisp;
+	protected String nextEnPassantTargetSquare = null;
 
 	protected PieceNotation[][] mockBoard;
-	protected PieceNotation movedPiece, attackedPiece;
-	protected boolean isWhite;
+	protected PieceNotation movedPiece;
+	protected boolean isWhiteMove;
 
 	/**
-	 * Constructor with gamePlay and moveDTO parameters.
-	 * All other fields generated from these objects.
-	 */  
-	
-	public MoveValidator(GamePlay gamePlay, MoveDTO moveDTO) {
-		this.gamePlay = gamePlay;
-		this.moveDTO = moveDTO;
+	 * Entry point into move validation and composition of MoveResponseDTO object:
+	 * 1) validates move based on allowed piece movements. 2) if plausible move,
+	 * simulates chess move on 'mockBoard' (deep copy of persisted game state) 3)
+	 * checks if move resulted in player's king being in check 4) evaluate whether
+	 * other king has been placed in check 5) if moves are not valid, return null
+	 * moveResponseDTO, otherwise return populated DTO.
+	 */
+	public MoveResponseDTO validate(MoveDTO moveDTO, GamePlay gp) {
+		gamePlay = gp;
+		mockBoard = gp.getGameBoard().getBoard();
+		loadMove(moveDTO);
 
+		if (moveDTO.getPromotionPiece() != null) {
+			if (!("RNBQrnbq".contains(moveDTO.getPromotionPiece())))
+				return null;
+			if (!(isWhiteMove ? endRow == 7 : endRow == 0))
+				return null;
+		}
+
+		if (!isValidTurn() || !isValidMove())
+			return null;
+
+		generateMoveResponse();
+
+		mockBoard = GameBoardServices.simulateMove(mockBoard, moveResponseDTO.getPieceMoves(),
+				moveDTO.getPromotionPiece());
+
+		if (movedPiece.getType() == PieceType.KING) {
+			if (isKingInCheck(new int[] { endRow, endCol }, getPlayerColor()))
+				return null;
+		} else {
+			if (isKingInCheck(getPlayerColor()))
+				return null;
+		}
+
+		if (isKingInCheck(getOpponentColor())) {
+			chessMoves.add(ChessMove.CHECK);
+			moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE); // TODO
+		}
+
+		generateOfficialMove(moveDTO);
+
+		// TODO check checkmate, stalemate, update DTO, update official move #; check =>
+		// checkmate as POC
+
+		return moveResponseDTO;
+	}
+
+	protected GameColor getPlayerColor() {
+		return isWhiteMove ? GameColor.WHITE : GameColor.BLACK;
+	}
+
+	protected GameColor getOpponentColor() {
+		return isWhiteMove ? GameColor.BLACK : GameColor.WHITE;
+	}
+
+	protected void loadMove(MoveDTO moveDTO) {
 		startPos = moveDTO.getStartPos();
 		endPos = moveDTO.getEndPos();
 		startRow = GameBoardServices.getRow(startPos);
 		endRow = GameBoardServices.getRow(endPos);
 		startCol = GameBoardServices.getColumn(startPos);
 		endCol = GameBoardServices.getColumn(endPos);
-
-		mockBoard = GameBoardServices.copyBoard(gamePlay.getGameBoard().getBoard());
-		movedPiece = mockBoard[startRow][startCol];
-		attackedPiece = mockBoard[endRow][endCol];
-		isWhite = movedPiece.getColor() == GameColor.WHITE;
-	
 		colDisplacement = 1 * (endCol - startCol);
 		rowDisplacement = -1 * (endRow - startRow);
 		absRowDisp = Math.abs(rowDisplacement);
 		absColDisp = Math.abs(colDisplacement);
+
+		movedPiece = mockBoard[startRow][startCol];
+		isWhiteMove = movedPiece.getColor() == GameColor.WHITE;
+
+		nextEnPassantTargetSquare = null;
 	}
 
-	/**
-	 * Entry point into move validation and composition of MoveResponseDTO object:
-	 * 1) validates move based on allowed piece movements.
-	 * 2) if plausible move, simulates chess move on 'mockBoard' (deep copy of persisted game state)
-	 * 3) checks if move resulted in player's king being in check
-	 * 4) evaluate whether other king has been placed in check
-	 * 5) if moves are not valid, return null moveResponseDTO, otherwise return populated DTO.
-	 */  
+	protected boolean isValidTurn() {
+		return (gamePlay.getHalfMoves() % 2 == 1) == isWhiteMove;
+	}
 
-	public MoveResponseDTO validate() {
-		boolean isPlausibleMove = false;
-
+	protected boolean isValidMove() {
 		switch (movedPiece.getType()) {
 		case ROOK:
-			isPlausibleMove = checkRookMove();
-			break;
+			return validateRookMove();
 		case KNIGHT:
-			isPlausibleMove = checkKnightMove();
-			break;
+			return validateKnightMove();
 		case BISHOP:
-			isPlausibleMove = checkBishopMove();
-			break;
+			return validateBishopMove();
 		case QUEEN:
-			isPlausibleMove = checkQueenMove();
-			break;
+			return validateQueenMove();
 		case PAWN:
-			isPlausibleMove = checkPawnMove();
-			break;
+			return validatePawnMove();
 		case KING:
-			isPlausibleMove = checkKingMove();
-			break;
-		case CAT:
+			return validateKingMove();
 		default:
-			break;
+			return false;
 		}
-		if (!isPlausibleMove) {
-			return null;
-		}
-		
-		generateMoveResponse();
-
-		GameBoardServices.movePiece(mockBoard, moveResponseDTO.getPieceMoves(), moveDTO.getPromotionPiece());
-
-		if (!checkNotInCheck(isWhite ? GameColor.WHITE : GameColor.BLACK)) {
-			return null;
-		}
-
-		moveResponseDTO.setChecked(!checkNotInCheck(isWhite ? GameColor.BLACK : GameColor.WHITE));
-		generateOfficialMove();
-
-		//TODO check checkmate, stalemate, update DTO, update official move #; check => checkmate as POC
-		if (moveResponseDTO.isChecked()) {
-			moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE);
-		}
-		
-		return moveResponseDTO;
 	}
 
 	/**
-	 * Navigation functions for evaluating whether a moved piece
-	 * in the indicated direction (according to white player perspective) 
-	 * is attempting to pass through pieces on the board.
+	 * Functions for evaluating whether a moved piece along a row in the indicated
+	 * direction (according to white player perspective) is attempting to pass
+	 * through pieces on the board.
 	 * 
-	 * Returns true if move is okay, false if not valid (obstructed).
-	 */  
-	protected boolean navigateRight() {
-		for (int i = 1; i < absColDisp; i++) {
-			if (mockBoard[startRow][startCol + i] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
+	 * @param sign +1 for right, -1 for left
+	 * @return true for valid move (not obstructed), false for invalid move
+	 *         (obstructed).
+	 */
+	protected boolean isUnobstructedMove() {
+		int rowSign = Integer.signum(rowDisplacement);
+		int colSign = Integer.signum(colDisplacement);
+		int disp = Math.max(absColDisp, absRowDisp);
 
-	protected boolean navigateLeft() {
-		for (int i = 1; i < absColDisp; i++) {
-			if (mockBoard[startRow][startCol - i] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateUp() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow - i][startCol] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateDown() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow + i][startCol] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateUpperRight() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow - i][startCol + i] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateLowerRight() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow + i][startCol + i] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateUpperLeft() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow - i][startCol - i] != null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	protected boolean navigateLowerLeft() {
-		for (int i = 1; i < absRowDisp; i++) {
-			if (mockBoard[startRow + i][startCol - i] != null) {
+		for (int i = 1; i < disp; i++) {
+			if (mockBoard[startRow - i * rowSign][startCol + i * colSign] != null) {
 				return false;
 			}
 		}
@@ -208,155 +175,70 @@ public class MoveValidator {
 
 	/**
 	 * Logic for classic rook move along row or column.
-	 */  
-	protected boolean checkRookMove() {
-		boolean validMove = (absRowDisp == 0) != (absColDisp == 0);
-		if (!validMove) {
+	 */
+	protected boolean validateRookMove() {
+		if ((absRowDisp == 0) == (absColDisp == 0))
 			return false;
-		}
-
-		if (rowDisplacement == 0) {
-			validMove = colDisplacement > 0 ? navigateRight() : navigateLeft();
-		} else {
-			validMove = rowDisplacement > 0 ? navigateUp() : navigateDown();
-		}
-
-		if (!validMove) {
-			return false;
-		}
-
-		switch (startPos) {
-		case "A1":
-			gamePlay.removeCastling("Q");
-			break;
-		case "H1":
-			gamePlay.removeCastling("K");
-			break;
-		case "A8":
-			gamePlay.removeCastling("q");
-			break;
-		case "H8":
-			gamePlay.removeCastling("k");
-			break;
-		default:
-			break;
-		}
-
-		return true;
+		return isUnobstructedMove();
 	}
 
 	/**
 	 * Logic for classic knight move in L shape.
-	 */ 
-	protected boolean checkKnightMove() {
-		boolean validMove = (absRowDisp == 1 && absColDisp == 2);
-		validMove |= (absRowDisp == 2 && absColDisp == 1);
-
-		if (!validMove) {
-			return false;
-		}
-
-		return true;
+	 */
+	protected boolean validateKnightMove() {
+		return (absRowDisp == 1 && absColDisp == 2) || (absRowDisp == 2 && absColDisp == 1);
 	}
 
 	/**
 	 * Logic for classic bishop move along diagonal.
-	 */ 
-	protected boolean checkBishopMove() {
-		boolean validMove = absRowDisp == absColDisp;
-		if (!validMove) {
+	 */
+	protected boolean validateBishopMove() {
+		if (absRowDisp != absColDisp)
 			return false;
-		}
-
-		if (rowDisplacement > 0) {
-			validMove = colDisplacement > 0 ? navigateUpperRight() : navigateUpperLeft();
-		} else {
-			validMove = colDisplacement > 0 ? navigateLowerRight() : navigateLowerLeft();
-		}
-
-		if (!validMove) {
-			return false;
-		}
-
-		return true;
+		return isUnobstructedMove();
 	}
 
 	/**
 	 * Logic for classic queen move along row, column or diagonal.
-	 */ 
-	protected boolean checkQueenMove() {
-		boolean validMove = ((absRowDisp == 0) != (absColDisp == 0)) || (absRowDisp == absColDisp);
-		if (!validMove) {
+	 */
+	protected boolean validateQueenMove() {
+		if ((absRowDisp == 0) == (absColDisp == 0) == (absRowDisp != absColDisp))
 			return false;
-		}
-
-		if ((absRowDisp == 0) != (absColDisp == 0)) {
-			if (rowDisplacement == 0) {
-				validMove = colDisplacement > 0 ? navigateRight() : navigateLeft();
-			} else {
-				validMove = rowDisplacement > 0 ? navigateUp() : navigateDown();
-			}
-		} else {
-			if (rowDisplacement > 0) {
-				validMove = colDisplacement > 0 ? navigateUpperRight() : navigateUpperLeft();
-			} else {
-				validMove = colDisplacement > 0 ? navigateLowerRight() : navigateLowerLeft();
-			}
-		}
-
-		if (!validMove) {
-			return false;
-		}
-
-		return true;
+		return isUnobstructedMove();
 	}
-	
-	/**
-	 * Logic for classic pawn moves.
-	 * 1) Check if move is an attack or en passant capture.
-	 * 2) Check if piece is promoted to a queen, knight, rook, bishop. TODO: logic not fully implemented.
-	 * 3) Check whether move from starting position triggers an en passant attack on next move.
-	 * 4) Check if move is simple forward move in column
-	 */ 
-	protected boolean checkPawnMove() {
-		boolean validMove = (absColDisp <= 1 && absRowDisp == 1); 	//forward move +/- attack
-		validMove |= (absColDisp == 0 && absRowDisp == 2); 			// opening pawn move
-		validMove &= (isWhite ? 1 : -1) * rowDisplacement > 0; 		// move is 'forward' (towards opposing side)
 
-		if (!validMove) {
+	/**
+	 * Logic for classic pawn moves. 1) Check if move is an attack or en passant
+	 * capture. 2) Check whether move from starting position triggers an en passant
+	 * attack on next move. 3) Check if move is simple forward move in column.
+	 */
+	protected boolean validatePawnMove() {
+
+		if (!isValidPawnMovement())
 			return false;
-		}
+		if (!isValidPawnDirection())
+			return false;
+
 		if (absColDisp == 1 && absRowDisp == 1) {
-			if (gamePlay.getEnPassantTargetSquare() != null && gamePlay.getEnPassantTargetSquare().equals(endPos)) {
-				moveResponseDTO.addChessMove(ChessMove.EN_PASSANT);
-				moveResponseDTO.addChessMove(ChessMove.CAPTURE);
-				String[] extraMove = { GameBoardServices.getSquare(startRow, endCol), null };
-				moveResponseDTO.addPieceMove(extraMove);
-			} else if (attackedPiece != null) {
-				moveResponseDTO.addChessMove(ChessMove.CAPTURE);
+			if (isPieceAttack()) {
+				chessMoves.add(ChessMove.CAPTURE);
+			} else if (isValidEnPassantAttack()) {
+				chessMoves.add(ChessMove.EN_PASSANT_CAPTURE);
+				chessMoves.add(ChessMove.CAPTURE);
+				moveResponseDTO.addPieceMove(new String[] { GameBoardServices.getSquare(startRow, endCol), "ep" });
 			} else {
 				return false;
 			}
-		}
-
-		if (moveDTO.getPromotionPiece() != null) {
-			evaluatePawnPromotion();
-		}
-
-		gamePlay.setEnPassantTargetSquare(null);
-
-		if (absColDisp == 0 && absRowDisp == 2) {
-			if ((startRow == 1 || startRow == 6) && attackedPiece == null) {
-				moveResponseDTO.addChessMove(ChessMove.SIMPLE_MOVE);
-				gamePlay.setEnPassantTargetSquare(GameBoardServices.getSquare(startRow + (isWhite ? -1 : 1), startCol));
+		} else if (absColDisp == 0 && absRowDisp == 2) {
+			if (isValidPawnInitialDouble()) {
+				chessMoves.add(ChessMove.PAWN_INITIAL_DOUBLE);
+				nextEnPassantTargetSquare = GameBoardServices.getSquare(startRow + (isWhiteMove ? -1 : 1), startCol);
 			} else {
 				return false;
 			}
-		}
-
-		if (absColDisp == 0 && absRowDisp == 1) {
-			if (attackedPiece == null) {
-				moveResponseDTO.addChessMove(ChessMove.SIMPLE_MOVE);
+		} else if (absColDisp == 0 && absRowDisp == 1) {
+			if (!isPieceAttack()) {
+				chessMoves.add(ChessMove.SIMPLE_MOVE);
 			} else {
 				return false;
 			}
@@ -365,262 +247,279 @@ public class MoveValidator {
 		return true;
 	}
 
-	/**
-	 * Pawn promotion update of MoveResponseDTO.
-	 */ 
-	protected void evaluatePawnPromotion() {
-		switch (moveDTO.getPromotionPiece().toString().toLowerCase()) {
-		case "r":
-			moveResponseDTO.addChessMove(ChessMove.PROMOTE_ROOK);
-			break;
-		case "b":
-			moveResponseDTO.addChessMove(ChessMove.PROMOTE_BISHOP);
-			break;
-		case "n":
-			moveResponseDTO.addChessMove(ChessMove.PROMOTE_KNIGHT);
-			break;
-		case "q":
-			moveResponseDTO.addChessMove(ChessMove.PROMOTE_QUEEN);
-			break;
-		}
+	protected boolean isValidPawnMovement() {
+		return (absColDisp <= 1 && absRowDisp == 1) || (absColDisp == 0 && absRowDisp == 2);
+	}
+
+	protected boolean isValidPawnDirection() {
+		return (isWhiteMove ? 1 : -1) * rowDisplacement > 0;
+	}
+
+	protected boolean isValidEnPassantAttack() {
+		return gamePlay.getEnPassantTargetSquare() != null && gamePlay.getEnPassantTargetSquare().equals(endPos);
+	}
+
+	protected boolean isValidPawnInitialDouble() {
+		return (startRow == 1 || startRow == 6) && !isPieceAttack()
+				&& mockBoard[startRow + (isWhiteMove ? -1 : 1)][startCol] == null;
+	}
+
+	protected boolean isPieceAttack() {
+		return mockBoard[endRow][endCol] != null;
+	}
+
+	protected boolean isValidKingMove() {
+		return (absColDisp <= 1 && absRowDisp <= 1) || (absColDisp == 2 && absRowDisp == 0);
 	}
 
 	/**
-	 * Logic for classic king move, including castling if available.
-	 * Moving king directly validates whether king will be in check,
-	 * and for castling, whether piece is in check at any point along
-	 * castling move transition.
-	 * Updates castling rules accordingly within gamePlay object.
-	 */ 
-	protected boolean checkKingMove() {
-		boolean validMove = (absColDisp == 1 || absRowDisp == 1) || (absColDisp == 2 && absRowDisp == 0);
+	 * Logic for classic king move, including castling if available. Moving king
+	 * directly validates whether king will be in check, and for castling, whether
+	 * piece is in check at any point along castling move transition. Updates
+	 * castling rules accordingly within gamePlay object.
+	 */
+	protected boolean validateKingMove() {
 
-		if (!validMove) {
+		if (!isValidKingMove())
+			return false;
+
+		if (absColDisp == 2)
+			return validateCastlingMove();
+
+		return true;
+	}
+
+	protected boolean validateCastlingMove() {
+
+		if (gamePlay.getCastling() == null)
+			return false;
+
+		switch (startPos + endPos) {
+		case "E1C1":
+			if (!gamePlay.getCastling().contains("Q"))
+				return false;
+			chessMoves.add(ChessMove.QUEEN_SIDE_CASTLE);
+			moveResponseDTO.addPieceMove(new String[] { "A1", "D1" });
+			break;
+		case "E1G1":
+			if (!gamePlay.getCastling().contains("K"))
+				return false;
+			chessMoves.add(ChessMove.KING_SIDE_CASTLE);
+			moveResponseDTO.addPieceMove(new String[] { "H1", "F1" });
+			break;
+		case "E8C8":
+			if (!gamePlay.getCastling().contains("q"))
+				return false;
+			chessMoves.add(ChessMove.QUEEN_SIDE_CASTLE);
+			moveResponseDTO.addPieceMove(new String[] { "A8", "D8" });
+			break;
+		case "E8G8":
+			if (!gamePlay.getCastling().contains("k"))
+				return false;
+			chessMoves.add(ChessMove.KING_SIDE_CASTLE);
+			moveResponseDTO.addPieceMove(new String[] { "H8", "F8" });
+			break;
+		default:
 			return false;
 		}
 
-		if (absColDisp == 2 && !gamePlay.getCastling().equals("")) {
-			String castling = gamePlay.getCastling();
-			int colDirection = 0;
-			String[] extraMove;
-			switch (startPos + endPos) {
-			case "E1C1":
-				colDirection = castling.contains("Q") ? -1 : 0;
-				moveResponseDTO.addChessMove(ChessMove.QUEEN_SIDE_CASTLE);
-				extraMove = new String[] { "A1", "D1" };
-				moveResponseDTO.addPieceMove(extraMove);
-				break;
-			case "E1G1":
-				colDirection = castling.contains("K") ? 1 : 0;
-				moveResponseDTO.addChessMove(ChessMove.KING_SIDE_CASTLE);
-				extraMove = new String[] { "H1", "F1" };
-				moveResponseDTO.addPieceMove(extraMove);
-				break;
-			case "E8C8":
-				colDirection = castling.contains("q") ? -1 : 0;
-				moveResponseDTO.addChessMove(ChessMove.QUEEN_SIDE_CASTLE);
-				extraMove = new String[] { "A8", "D8" };
-				moveResponseDTO.addPieceMove(extraMove);
-				break;
-			case "E8G8":
-				colDirection = castling.contains("k") ? 1 : 0;
-				moveResponseDTO.addChessMove(ChessMove.KING_SIDE_CASTLE);
-				extraMove = new String[] { "H8", "F8" };
-				moveResponseDTO.addPieceMove(extraMove);
-				break;
-			default:
-				return false;
-			}
-			if (colDirection == -1) {
-				for (int i = 1; i <= 3; i++) {
-					if (mockBoard[startRow][startCol - i] != null) {
-						return false;
-					}
-				}
-			} else if (colDirection == 1) {
-				for (int i = 1; i <= 2; i++) {
-					if (mockBoard[startRow][startCol + i] != null) {
-						return false;
-					}
-				}
-			} else {
-				return false;
-			}
-			for (int i = 0; i <= 2; i++) {
-				if (!checkNotInCheck(new int[] { startRow, startCol + i * colDirection },
-						isWhite ? GameColor.WHITE : GameColor.BLACK)) {
-					return false;
-				}
-			}
-		}
+		int colDirection = Integer.signum(colDisplacement);
 
-		if (isWhite) {
-			gamePlay.removeCastling("K");
-			gamePlay.removeCastling("Q");
-		} else {
-			gamePlay.removeCastling("k");
-			gamePlay.removeCastling("q");
-		}
+		if (isCastlingObstructed(colDirection))
+			return false;
+
+		if (isKingInCheckDuringCastle(colDirection))
+			return false;
 
 		return true;
 	}
-	
+
+	protected boolean isCastlingObstructed(int colDirection) {
+		if (colDirection == -1) {
+			for (int i = 1; i <= 2; i++) {
+				if (mockBoard[startRow][startCol - i] != null) {
+					return true;
+				}
+			}
+		} else if (colDirection == 1) {
+			for (int i = 1; i <= 1; i++) {
+				if (mockBoard[startRow][startCol + i] != null) {
+					return true;
+				}
+			}
+		} else {
+			return true;
+		}
+
+		return false;
+	}
+
+	// Checks starting position and transition for check (not final position)
+	protected boolean isKingInCheckDuringCastle(int colDirection) {
+		for (int i = 0; i <= 2; i++) {
+			if (isKingInCheck(new int[] { startRow, startCol + i * colDirection }, getPlayerColor())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Updates MoveResponseDTO with move validity and piece movement(s).
-	 */ 
+	 */
 	protected void generateMoveResponse() {
-		moveResponseDTO.setValid(true);
 		String[] move = { startPos, endPos };
 		moveResponseDTO.addPieceMove(move);
 
 		if (movedPiece.getType() != PieceType.PAWN) { // handled explicitly in pawn move logic
-			moveResponseDTO.addChessMove(attackedPiece == null ? ChessMove.SIMPLE_MOVE : ChessMove.CAPTURE);
-			gamePlay.setEnPassantTargetSquare(null);
+			chessMoves.add(isPieceAttack() ? ChessMove.CAPTURE : ChessMove.SIMPLE_MOVE);
 		}
 	}
 
 	/**
 	 * Generates String of extended chess move notation for tracking game history.
 	 * MoveResponseDTO object updated with official chess move.
-	 */ 
-	protected void generateOfficialMove() {
-		String move = ""; 
-				
+	 */
+	protected void generateOfficialMove(MoveDTO moveDTO) {
+		String move = "";
+
 		if (gamePlay.getHalfMoves() % 2 == 1) {
 			move += String.valueOf((gamePlay.getHalfMoves() - 1) / 2 + 1) + ".";
 		}
-		
-		if (moveResponseDTO.getChessMoves().contains(ChessMove.KING_SIDE_CASTLE)) {
-			move += "O-O" + (moveResponseDTO.isChecked() ? "+ " : " ");
-		} else if (moveResponseDTO.getChessMoves().contains(ChessMove.QUEEN_SIDE_CASTLE)) {
-			move += "O-O-O" + (moveResponseDTO.isChecked() ? "+ " : " ");
+
+		if (chessMoves.contains(ChessMove.KING_SIDE_CASTLE)) {
+			move += "O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+ " : " ");
+		} else if (chessMoves.contains(ChessMove.QUEEN_SIDE_CASTLE)) {
+			move += "O-O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+ " : " ");
 		} else {
-			move += movedPiece.toString() + startPos.toLowerCase()
-					+ (moveResponseDTO.getChessMoves().contains(ChessMove.CAPTURE) ? "x" : "") + endPos.toLowerCase()
-					+ (moveResponseDTO.getChessMoves().contains(ChessMove.EN_PASSANT) ? "ep" : "")
-					+ (moveDTO.getPromotionPiece() != null ? "=" + moveDTO.getPromotionPiece().toString() : "")
-					+ (moveResponseDTO.isChecked() ? "+ " : " ");
+			move += movedPiece.toString() + startPos.toLowerCase() + (chessMoves.contains(ChessMove.CAPTURE) ? "x" : "")
+					+ endPos.toLowerCase() + (chessMoves.contains(ChessMove.EN_PASSANT_CAPTURE) ? "ep" : "")
+					+ (moveDTO.getPromotionPiece() != null ? "=" + moveDTO.getPromotionPiece() : "")
+					+ (chessMoves.contains(ChessMove.CHECK) ? "+ " : " ");
 		}
-		
-		moveResponseDTO.setOfficialChessMove(move);
+		moveResponseDTO.setMoveNotation(move);
 	}
 
 	/**
-	 * Evaluates whether the king of the indicated color is in check.
-	 * Finds piece via GameBoardServices
-	 */ 
-	protected boolean checkNotInCheck(GameColor kingColor) {
+	 * Evaluates whether the king of the indicated color is in check. Finds piece
+	 * via GameBoardServices
+	 */
+	protected boolean isKingInCheck(GameColor kingColor) {
 		PieceNotation king = PieceNotation.valueOf(kingColor == GameColor.WHITE ? "K" : "k");
 		int[] kingPos = GameBoardServices.findKingPosition(mockBoard, king);
 
-		return checkNotInCheck(kingPos, kingColor);
+		return isKingInCheck(kingPos, kingColor);
 	}
-	
+
 	/**
 	 * Checks whether the king of the indicated color and position is under attack
 	 * in any direction and within reach of knight.
-	 */ 
-	protected boolean checkNotInCheck(int[] kingPos, GameColor kingColor) {
+	 */
+	protected boolean isKingInCheck(int[] kingPos, GameColor kingColor) {
 
-		if (!checkNoKnightAttack(kingPos, kingColor)) {
-			return false;
-		}
-		if (!checkNoFileAttack(kingPos, kingColor)) {
-			return false;
-		}
-		if (!checkNoDiagonalAttack(kingPos, kingColor)) {
-			return false;
-		}
-		return true;
+		if (isKingUnderAttackByKnight(kingPos, kingColor))
+			return true;
+		if (isKingUnderStraightLineAttack(kingPos, kingColor))
+			return true;
+		if (isKingUnderDiagonalLineAttack(kingPos, kingColor))
+			return true;
+
+		return false;
 	}
 
 	/**
 	 * Knight-specific logic for evaluating whether the king is in check.
-	 */ 
-	protected boolean checkNoKnightAttack(int[] kingPos, GameColor kingColor) {
+	 */
+	protected boolean isKingUnderAttackByKnight(int[] kingPos, GameColor kingColor) {
+		int row = kingPos[0];
+		int col = kingPos[1];
+		int[][] indices = { { 1, 2 }, { 2, 1 }, { -1, -2 }, { -2, -1 }, { 1, -2 }, { -2, 1 }, { -1, 2 }, { 2, -1 } };
 
-		int r = kingPos[0];
-		int c = kingPos[1];
-		int[][] index = { { 1, 2 }, { 2, 1 }, { -1, -2 }, { -2, -1 }, { 1, -2 }, { -2, 1 }, { -1, 2 }, { 2, -1 } };
-
-		for (int[] i : index) {
-			if ((r + i[0] >= 0) && (r + i[0] <= 7) && (c + i[1] >= 0) && (c + i[1] <= 7)) {
-				PieceNotation attackPiece = mockBoard[r + i[0]][c + i[1]];
-				if (attackPiece != null && attackPiece.getColor() != kingColor
-						&& attackPiece.getType() == PieceType.KNIGHT) {
-					return false;
+		for (int[] i : indices) {
+			if (isPositionOnBoard(row + i[0], col + i[1])) {
+				PieceNotation attackPiece = mockBoard[row + i[0]][col + i[1]];
+				if (attackPiece != null) {
+					if (attackPiece.getColor() == kingColor)
+						continue;
+					if (attackPiece.getType() == PieceType.KNIGHT)
+						return true;
 				}
 			}
 		}
-		return true;
+		return false;
 	}
-	
+
 	/**
-	 * Row/Col-specific logic for evaluating whether the king is in check.
-	 * Looks for un-obstructed opposite-color queen, rook, nearby king.
-	 */ 
-	protected boolean checkNoFileAttack(int[] kingPos, GameColor kingColor) {
-		int r = kingPos[0];
-		int c = kingPos[1];
-		int[][] index = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+	 * Row/Col-specific logic for evaluating whether the king is in check. Looks for
+	 * unobstructed opposite-color queen, rook, nearby king.
+	 */
+	protected boolean isKingUnderStraightLineAttack(int[] kingPos, GameColor kingColor) {
+		int row = kingPos[0];
+		int col = kingPos[1];
+		int[][] indices = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
 
-		for (int[] i : index) {
+		for (int[] i : indices) {
 			int count = 1;
-			while ((r + i[0] * count >= 0) && (r + i[0] * count <= 7) && (c + i[1] * count >= 0)
-					&& (c + i[1] * count <= 7)) {
-				PieceNotation attackPiece = mockBoard[r + i[0] * count][c + i[1] * count];
-
+			while (isPositionOnBoard(row + i[0] * count, col + i[1] * count)) {
+				PieceNotation attackPiece = mockBoard[row + i[0] * count][col + i[1] * count];
 				if (attackPiece != null) {
-					boolean isNotSameColor = attackPiece.getColor() != kingColor;
-					boolean isQueenOrRook = attackPiece.getType() == PieceType.QUEEN
-							|| attackPiece.getType() == PieceType.ROOK;
-					boolean isCloseKing = (attackPiece.getType() == PieceType.KING)
-							&& ((Math.abs(i[0]*count) == 1) || (Math.abs(i[1] * count) == 1));
-
-					if (isNotSameColor && (isQueenOrRook || isCloseKing)) {
-						return false;
-					} else {
+					if (attackPiece.getColor() == kingColor)
 						break;
+					if (attackPiece.getType() == PieceType.QUEEN)
+						return true;
+					if (attackPiece.getType() == PieceType.ROOK)
+						return true;
+					if (attackPiece.getType() == PieceType.KING
+							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
+						return true;
 					}
+					break;
 				}
 				count++;
 			}
 		}
-		return true;
+		return false;
 	}
-	
+
 	/**
-	 * Diagonal-specific logic for evaluating whether the king is in check.
-	 * Looks for un-obstructed opposite-color queen, bishop, nearby king or nearby pawn (on attacking diagonal).
-	 */ 
-	protected boolean checkNoDiagonalAttack(int[] kingPos, GameColor kingColor) {
-		int r = kingPos[0];
-		int c = kingPos[1];
-		int[][] index = { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } };
+	 * Diagonal-specific logic for evaluating whether the king is in check. Looks
+	 * for unobstructed opposite-color queen, bishop, nearby king or nearby pawn (on
+	 * attacking diagonal).
+	 */
+	protected boolean isKingUnderDiagonalLineAttack(int[] kingPos, GameColor kingColor) {
+		int row = kingPos[0];
+		int col = kingPos[1];
+		int[][] indices = { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } };
 
-		for (int[] i : index) {
+		for (int[] i : indices) {
 			int count = 1;
-			while ((r + i[0] * count >= 0) && (r + i[0] * count <= 7) && (c + i[1] * count >= 0)
-					&& (c + i[1] * count <= 7)) {
-				PieceNotation attackPiece = mockBoard[r + i[0] * count][c + i[1] * count];
+			while (isPositionOnBoard(row + i[0] * count, col + i[1] * count)) {
+				PieceNotation attackPiece = mockBoard[row + i[0] * count][col + i[1] * count];
 				if (attackPiece != null) {
-					boolean isNotSameColor = attackPiece.getColor() != kingColor;
-					boolean isQueenOrBishop = attackPiece.getType() == PieceType.QUEEN
-							|| attackPiece.getType() == PieceType.BISHOP;
-					boolean isCloseKing = (attackPiece.getType() == PieceType.KING)
-							&& ((Math.abs(i[0]*count) == 1) || (Math.abs(i[1] * count) == 1));
-					boolean isClosePawn = (attackPiece.getType() == PieceType.PAWN)
-							&& (r + (kingColor == GameColor.WHITE ? -1 : 1)) == (r + i[0] * count);
-
-					if (isNotSameColor && (isQueenOrBishop || isCloseKing || isClosePawn)) {
-						return false;
-					} else {
+					if (attackPiece.getColor() == kingColor)
 						break;
+					if (attackPiece.getType() == PieceType.QUEEN)
+						return true;
+					if (attackPiece.getType() == PieceType.BISHOP)
+						return true;
+					if (attackPiece.getType() == PieceType.KING
+							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
+						return true;
 					}
+					if (attackPiece.getType() == PieceType.PAWN
+							&& (row + (kingColor == GameColor.WHITE ? -1 : 1)) == (row + i[0] * count)) {
+						return true;
+					}
+					break;
 				}
 				count++;
 			}
 		}
-		return true;
+		return false;
 	}
+
+	protected boolean isPositionOnBoard(int row, int col) {
+		return row >= 0 && row <= 7 && col >= 0 && col <= 7;
+	}
+
 }

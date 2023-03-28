@@ -1,6 +1,5 @@
 package com.github.hallbm.chesswithcats.model;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +17,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyClass;
 import jakarta.persistence.MapKeyColumn;
-import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,8 +27,6 @@ import lombok.Setter;
  * Short-term persistence of active game states, including 
  * 1) board state comprised of a 8x8 matrix of piece enums: PieceNotation[][]
  * 2) hashmap of current square mapping associated PieceNotation enum, e.g., "A5":"Q"
- * 
- * included helper function for updating FEN
  */
 
 @Getter
@@ -38,10 +34,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Embeddable
-public class GameBoard implements Serializable{
-	
-	@Transient
-	private static final long serialVersionUID = 1L;
+public class GameBoard{
 	
 	@Column(length = 1024)
 	@Size(max = 1024)
@@ -57,34 +50,5 @@ public class GameBoard implements Serializable{
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	@Size(max = 36)
 	private Map<String, PieceNotation> pieceMap = new HashMap<>();;
-	
-	public StringBuilder getFenPositions() {
-		StringBuilder fenPos = new StringBuilder(100);
-		int emptyCount = 0;
-
-		for (int row = 0; row <8; row++) {
-			emptyCount = 0;
-			for (int col = 0; col < 8; col++) {
-				if(board[row][col] == null) {
-					emptyCount++;
-				} else {
-					if (emptyCount != 0) {
-						fenPos.append(String.valueOf(emptyCount));
-						emptyCount = 0;
-					}
-					fenPos.append(board[row][col].toString());
-				}
-
-				if (col == 7 && emptyCount !=0) {
-					fenPos.append(String.valueOf(emptyCount));
-				}
-			}
-
-			if (row > 0) {
-				fenPos.append("/");
-			}
-		}
-		return fenPos;
-	}
 
 }
