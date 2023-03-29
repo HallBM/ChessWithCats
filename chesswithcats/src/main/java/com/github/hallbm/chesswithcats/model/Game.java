@@ -79,7 +79,7 @@ public class Game{
 	private LocalDate acceptDate = LocalDate.now();
 
 	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-	private GamePlay gamePlay;
+	private GamePlay gamePlay = new GamePlay();
 
 	@Column(length = 64, updatable = false, nullable = false)
 	@NotNull

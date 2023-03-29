@@ -28,13 +28,12 @@ import com.github.hallbm.chesswithcats.model.Game;
 import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.model.GameRequest;
 import com.github.hallbm.chesswithcats.model.Player;
+import com.github.hallbm.chesswithcats.repository.GamePlayRepository;
 import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.FriendServices;
 import com.github.hallbm.chesswithcats.service.GameServices;
-
-import jakarta.servlet.http.HttpSession;
 
 /**
  * Controller related to CRUD for long-term storage of games played
@@ -51,6 +50,9 @@ public class GameController {
 
 	@Autowired
 	private GameRepository gameRepo;
+	
+	@Autowired
+	private GamePlayRepository gamePlayRepo;
 
 	@Autowired
 	private GameServices gameServ;
@@ -254,34 +256,27 @@ public class GameController {
 	@ResponseBody
 	@PostMapping("/game/move")
 	public ResponseEntity<MoveResponseDTO> validateAJAXMove(@RequestBody MoveDTO moveDTO,
-			@AuthenticationPrincipal Player currentUser, HttpSession session) throws JsonProcessingException {
+			@AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
 
 		Long gameId = Long.parseLong(moveDTO.getGameId());
 		Game game = gameRepo.findById(gameId).get();
 		GamePlay gamePlay = game.getGamePlay();
-
+	
 		MoveResponseDTO moveResponseDTO = game.getMoveValidator().validate(moveDTO, game.getGamePlay());
 
 		if (game.getStyle() == GameStyle.AMBIGUOUS) {
-			String attemptsKey = "attempts_" + moveDTO.getGameId() + "_" + currentUser.getUsername();
-			Integer chancesRemaining = (Integer) session.getAttribute(attemptsKey);
-
-			if (chancesRemaining == null) {
-				chancesRemaining = 2;
-				session.setAttribute(attemptsKey, chancesRemaining);
-			}
-
 			if (moveResponseDTO != null) {
-				session.setAttribute(attemptsKey, 2);
+				gamePlay.setMoveAttempts(0);
 			} else {
-				if (chancesRemaining > 0) {
-					session.setAttribute(attemptsKey, --chancesRemaining);
+				if (gamePlay.getMoveAttempts() <2) {
+					gamePlay.incrementMoveAttempts();
 				} else {
 					moveResponseDTO = new MoveResponseDTO();
 					moveResponseDTO.setMoveNotation("XXX ");
-					session.setAttribute(attemptsKey, 2);
+					gamePlay.setMoveAttempts(0);
 				}
 			}
+			gamePlayRepo.save(gamePlay);
 		}
 
 		if (moveResponseDTO == null) {

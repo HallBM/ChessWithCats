@@ -211,7 +211,10 @@ public class GameServices {
 
 		GameRequest gameReq = gameReqRepo.findById(requestId).get();
 		newGame.setStyle(gameReq.getStyle());
-		newGame.setGamePlay(new GamePlay());
+		
+		if (newGame.getStyle() == GameStyle.AMBIGUOUS) {
+			newGame.getGamePlay().setMoveAttempts(0);
+		}
 		
 		double randNum = Math.random();
 
@@ -364,7 +367,6 @@ public class GameServices {
 		GamePlay gamePlay = game.getGamePlay();
 		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), promotedPiece);
 		MoveValidator moveVal = game.getMoveValidator();
-
 
 		if (gamePlay.getHalfMoves() == 2) {
 			game.setOutcome(GameOutcome.INCOMPLETE);
