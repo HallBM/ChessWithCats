@@ -17,8 +17,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -86,7 +84,7 @@ public class GamePlay {
 	public String updateFenSet() {
 		String fen = GameBoardServices.getFenPositions(gameBoard.getBoard()) + " " 
 				+ (halfMoves % 2 == 1 ? "w" : "b") + " "
-				+ (castling.equals("") ? "-" : castling) + " "
+				+ (castling == null ? "-" : castling) + " "
 				+ (enPassantTargetSquare == null ? "-" : enPassantTargetSquare) + " "
 				+ String.valueOf(fiftyMoveClock) + " " + String.valueOf((halfMoves - 1) / 2 + 1);
 		fenList.add(fen);
@@ -114,6 +112,10 @@ public class GamePlay {
 	}
 
 	public void removeCastling(String castle) {
+		
+		if (castling == null) 
+			return;
+		
 		castling = castling.replace(castle, "");
 
 		if (castling.equals(""))
