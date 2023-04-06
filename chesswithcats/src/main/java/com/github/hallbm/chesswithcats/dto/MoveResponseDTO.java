@@ -24,8 +24,4 @@ public class MoveResponseDTO {
 	private String moveNotation = "";
 	private GameOutcome gameOutcome;
 	
-	public void addPieceMove(String[] move) {
-		pieceMoves.add(move);
-	}
-	
 }

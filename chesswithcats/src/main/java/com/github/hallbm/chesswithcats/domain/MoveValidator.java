@@ -7,14 +7,16 @@ import java.util.List;
 import com.github.hallbm.chesswithcats.domain.GameEnums.ChessMove;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
+import com.github.hallbm.chesswithcats.domain.GameEnums.PieceMovement;
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceNotation;
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceType;
 import com.github.hallbm.chesswithcats.dto.MoveDTO;
-import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.GamePlay;
 import com.github.hallbm.chesswithcats.service.GameBoardServices;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,23 +40,36 @@ import lombok.extern.slf4j.Slf4j;
  * 
  */
 
+@Slf4j
 @Getter
 @Setter
-@Slf4j
+@NoArgsConstructor
+@AllArgsConstructor
 public class MoveValidator {
 
-	protected MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
-	protected GamePlay gamePlay;
 	protected List<ChessMove> chessMoves = new ArrayList<>();
-
-	protected String startPos, endPos;
-	protected int startRow, endRow, startCol, endCol;
-	protected int colDisplacement, rowDisplacement, absRowDisp, absColDisp;
-	protected String nextEnPassantTargetSquare = null;
+	protected List<String[]> pieceMoves = new ArrayList<>();
+	protected String enPassantSquare;
 
 	protected PieceNotation[][] mockBoard;
 	protected PieceNotation movedPiece;
+	protected MoveDTO moveDTO;
+	protected GamePlay gamePlay;
 	protected boolean isWhiteMove;
+
+	public void setup(MoveDTO moveDTO, GamePlay gamePlay) {
+		this.moveDTO = moveDTO;
+		this.gamePlay = gamePlay;
+
+		chessMoves.clear();
+		pieceMoves.clear();
+		movedPiece = null;
+
+		enPassantSquare = gamePlay.getEnPassantTargetSquare();
+		mockBoard = gamePlay.getGameBoard().getBoard();
+		isWhiteMove = gamePlay.getHalfMoves() % 2 == 1;
+
+	}
 
 	/**
 	 * Entry point into move validation and composition of MoveResponseDTO object:
@@ -64,110 +79,166 @@ public class MoveValidator {
 	 * other king has been placed in check 5) if moves are not valid, return null
 	 * moveResponseDTO, otherwise return populated DTO.
 	 */
-	public MoveResponseDTO validate(MoveDTO moveDTO, GamePlay gp) {
+	public boolean validateMove(MoveDTO moveDTO, GamePlay gamePlay) {
 		log.info("validating move");
-		gamePlay = gp;
-		mockBoard = gp.getGameBoard().getBoard();
-		loadMove(moveDTO);
+		setup(moveDTO, gamePlay);
+
+		// unpack fields and derive relevant info
+		int[] start = GameBoardServices.getCoordinates(moveDTO.getStartPos());
+		int[] end = GameBoardServices.getCoordinates(moveDTO.getEndPos());
+		int rowDisp = -1 * (end[0] - start[0]);
+		int colDisp = 1 * (end[1] - start[1]);
+
+		movedPiece = mockBoard[start[0]][start[1]];
+		PieceNotation occupyingPiece = mockBoard[end[0]][end[1]];
+		boolean isAttack = isAttack(movedPiece, occupyingPiece);
+
+		// validation of MoveDTO
+		if (Arrays.equals(start, end))
+			return false;
+
+		if (!isValidTurn(isWhiteMove, movedPiece))
+			return false;
+
+		if (!isValidEndSquare(movedPiece, occupyingPiece))
+			return false;
 
 		if (moveDTO.getPromotionPiece() != null) {
 			if (!("RNBQrnbq".contains(moveDTO.getPromotionPiece())))
-				return null;
-			if (!(isWhiteMove ? endRow == 7 : endRow == 0))
-				return null;
-		}
-		
-		if (!isValidTurn() || !isValidMove())
-			return null;
+				return false;
 
-		log.info("move is valid: consistent with piece rules");
-		generateMoveResponse();
-
-		log.info("generating clone of board and simulating move to check whether move puts king in check (invalid move)");
-		mockBoard = GameBoardServices.simulateMove(mockBoard, moveResponseDTO.getPieceMoves(),
-				moveDTO.getPromotionPiece());
-
-		log.info("determining whether king is in check");
-		if (movedPiece.getType() == PieceType.KING) {
-			if (isKingInCheck(new int[] { endRow, endCol }, getPlayerColor()))
-				return null;
-		} else {
-			if (isKingInCheck(findKing(getPlayerColor()), getPlayerColor()))
-				return null;
-		}
-		log.info("king not in check");
-		
-		log.info("determining whether opponents king is in check");
-		int[] oppKingPos = findKing(getOpponentColor());
-		if (isKingInCheck(oppKingPos, getOpponentColor())) {
-			log.info("opponent's king is determined to be in check");
-			if (isOpponentKingInCheckmate(oppKingPos, getOpponentColor())) {
-				log.info("opponent's king determined to be in checkmate");
-				chessMoves.add(ChessMove.CHECKMATE);
-				moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE);
-			} else {
-				log.info("opponent's king determined to NOT be in checkmate");
-				chessMoves.add(ChessMove.CHECK);
-				//moveResponseDTO.setGameOutcome(GameOutcome.CHECKMATE);
-			}
+			if (!(isWhiteMove ? end[0] == 0 : end[0] == 7))
+				return false;
 		}
 
-		log.info("generating official move");
-		generateOfficialMove(moveDTO);
-
-		// TODO check checkmate, stalemate, update DTO, update official move #; check =>
-		// checkmate as POC
-
-		return moveResponseDTO;
-	}
-
-	protected GameColor getPlayerColor() {
-		return isWhiteMove ? GameColor.WHITE : GameColor.BLACK;
-	}
-
-	protected GameColor getOpponentColor() {
-		return isWhiteMove ? GameColor.BLACK : GameColor.WHITE;
-	}
-
-	protected void loadMove(MoveDTO moveDTO) {
-		startPos = moveDTO.getStartPos();
-		endPos = moveDTO.getEndPos();
-		startRow = GameBoardServices.getRow(startPos);
-		endRow = GameBoardServices.getRow(endPos);
-		startCol = GameBoardServices.getColumn(startPos);
-		endCol = GameBoardServices.getColumn(endPos);
-		colDisplacement = 1 * (endCol - startCol);
-		rowDisplacement = -1 * (endRow - startRow);
-		absRowDisp = Math.abs(rowDisplacement);
-		absColDisp = Math.abs(colDisplacement);
-
-		movedPiece = mockBoard[startRow][startCol];
-		isWhiteMove = movedPiece.getColor() == GameColor.WHITE;
-
-		nextEnPassantTargetSquare = null;
-	}
-
-	protected boolean isValidTurn() {
-		return (gamePlay.getHalfMoves() % 2 == 1) == isWhiteMove;
-	}
-
-	protected boolean isValidMove() {
+		// validation of piece movement
 		switch (movedPiece.getType()) {
 		case ROOK:
-			return validateRookMove();
-		case KNIGHT:
-			return validateKnightMove();
+			if (!isValidRookMove(mockBoard, start, rowDisp, colDisp))
+				return false;
+			break;
 		case BISHOP:
-			return validateBishopMove();
+			if (!isValidBishopMove(mockBoard, start, rowDisp, colDisp))
+				return false;
+			break;
 		case QUEEN:
-			return validateQueenMove();
+			if (!(isValidQueenMove(mockBoard, start, rowDisp, colDisp)))
+				return false;
+			break;
+		case KNIGHT:
+			if (!isValidKnightMove(rowDisp, colDisp))
+				return false;
+			break;
 		case PAWN:
-			return validatePawnMove();
+			if (!isValidPawnMove(mockBoard, start, end, rowDisp, colDisp, isWhiteMove, isAttack, enPassantSquare))
+				return false;
+			break;
 		case KING:
-			return validateKingMove();
+			if (!isValidKingMove(mockBoard, moveDTO.getStartPos(), moveDTO.getEndPos(), start, rowDisp, colDisp,
+					isAttack, isWhiteMove, gamePlay.getCastling()))
+				return false;
+			break;
 		default:
 			return false;
 		}
+
+		log.info("was valid movement");
+
+		// update fields for response
+		setEnPassantSquare(chessMoves, start, isWhiteMove);
+		chessMoves.add(isAttack ? ChessMove.CAPTURE : ChessMove.SIMPLE_MOVE);
+		pieceMoves.add(new String[] { moveDTO.getStartPos(), moveDTO.getEndPos() });
+
+		// clone board and simulate move to evaluate check
+		mockBoard = GameBoardServices.simulateMove(mockBoard, pieceMoves, moveDTO.getPromotionPiece());
+
+		log.info("checking if valid movement puts king in check");
+		if (movedPiece.getType() == PieceType.KING) {
+			if (isKingInCheck(mockBoard, end, movedPiece.getColor()))
+				return false;
+		} else {
+			if (isKingInCheck(mockBoard, findKing(mockBoard, isWhiteMove), movedPiece.getColor()))
+				return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Helper functions associated with loading and deriving data from MoveDTO and
+	 * GamePlay
+	 */
+
+	protected boolean isValidTurn(boolean isWhiteMove, PieceNotation movedPiece) {
+		return isWhiteMove ? movedPiece.getColor() == GameColor.WHITE : movedPiece.getColor() == GameColor.BLACK;
+	}
+
+	protected boolean isWhitePiece(PieceNotation piece) {
+		return piece.getColor() == GameColor.WHITE;
+	}
+
+	protected GameColor getOppositeColor(GameColor color) {
+		return color == GameColor.WHITE ? GameColor.BLACK : GameColor.WHITE;
+	}
+
+	/**
+	 * Helper functions associated with generating final move response
+	 */
+
+	public void setEnPassantSquare(List<ChessMove> chessMoves, int[] start, boolean isWhiteMove) {
+		enPassantSquare = chessMoves.contains(ChessMove.PAWN_INITIAL_DOUBLE)
+				? GameBoardServices.getPosition(isWhiteMove ? 5 : 2, start[1])
+				: "";
+	}
+
+	/**
+	 * Generates String of extended chess move notation for tracking game history.
+	 * MoveResponseDTO object updated with official chess move.
+	 */
+	public String generateOfficialMove() {
+		String move = "";
+
+		if (gamePlay.getHalfMoves() % 2 == 1) {
+			move += String.valueOf((gamePlay.getHalfMoves() - 1) / 2 + 1) + ".";
+		}
+
+		if (chessMoves.contains(ChessMove.KING_SIDE_CASTLE)) {
+			move += "O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+" : " ");
+		} else if (chessMoves.contains(ChessMove.QUEEN_SIDE_CASTLE)) {
+			move += "O-O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+" : " ");
+		} else {
+			move += movedPiece.toString() + moveDTO.getStartPos().toLowerCase()
+					+ (chessMoves.contains(ChessMove.CAPTURE) ? "x" : "") + moveDTO.getEndPos().toLowerCase()
+					+ (chessMoves.contains(ChessMove.EN_PASSANT_CAPTURE) ? "ep" : "")
+					+ (moveDTO.getPromotionPiece() != null ? "=" + moveDTO.getPromotionPiece() : "")
+					+ (chessMoves.contains(ChessMove.CHECK) ? "+" : "")
+					+ (chessMoves.contains(ChessMove.CHECKMATE) ? "#" : "") + " ";
+		}
+		return move;
+	}
+
+	/**
+	 * Helper functions associated with piece movements
+	 */
+	protected boolean isPositionOnBoard(int row, int col) {
+		return row >= 0 && row <= 7 && col >= 0 && col <= 7;
+	}
+
+	protected boolean isValidEndSquare(PieceNotation movedPiece, PieceNotation occupyingPiece) {
+		return occupyingPiece == null || occupyingPiece.getColor() != movedPiece.getColor();
+	}
+
+	protected boolean isAttack(PieceNotation movedPiece, PieceNotation occupyingPiece) {
+		return occupyingPiece != null && occupyingPiece.getColor() != movedPiece.getColor();
+	}
+
+	protected PieceNotation getKingNotation(boolean isWhite) {
+		return PieceNotation.valueOf(isWhite ? "K" : "k");
+	}
+
+	protected int[] findKing(PieceNotation[][] board, boolean isWhite) {
+		PieceNotation king = getKingNotation(isWhite);
+		return GameBoardServices.findKingPosition(board, king);
 	}
 
 	/**
@@ -179,51 +250,46 @@ public class MoveValidator {
 	 * @return true for valid move (not obstructed), false for invalid move
 	 *         (obstructed).
 	 */
-	protected boolean isUnobstructedMove() {
-		int rowSign = Integer.signum(rowDisplacement);
-		int colSign = Integer.signum(colDisplacement);
-		int disp = Math.max(absColDisp, absRowDisp);
+	protected boolean isUnobstructed(PieceNotation[][] board, int[] start, int rowDisp, int colDisp) {
 
-		for (int i = 1; i < disp; i++) {
-			if (mockBoard[startRow - i * rowSign][startCol + i * colSign] != null) {
+		int maxDisp = Math.max(Math.abs(rowDisp), Math.abs(colDisp));
+		int rowSign = Integer.signum(rowDisp);
+		int colSign = Integer.signum(colDisp);
+
+		for (int i = 1; i < maxDisp; i++) {
+			int testRow = start[0] - i * rowSign;
+			int testCol = start[1] + i * colSign;
+
+			if (board[testRow][testCol] != null) {
 				return false;
 			}
+
 		}
+
 		return true;
 	}
 
-	/**
-	 * Logic for classic rook move along row or column.
-	 */
-	protected boolean validateRookMove() {
-		if ((absRowDisp == 0) == (absColDisp == 0))
-			return false;
-		return isUnobstructedMove();
+	protected boolean isUnoccupied(PieceNotation[][] board, int row, int col) {
+		return board[row][col] == null;
 	}
 
-	/**
-	 * Logic for classic knight move in L shape.
-	 */
-	protected boolean validateKnightMove() {
-		return (absRowDisp == 1 && absColDisp == 2) || (absRowDisp == 2 && absColDisp == 1);
+	protected boolean isValidRookMove(PieceNotation[][] board, int[] start, int rowDisp, int colDisp) {
+		boolean isValid = (rowDisp == 0) != (colDisp == 0);
+		return isValid && isUnobstructed(board, start, rowDisp, colDisp);
 	}
 
-	/**
-	 * Logic for classic bishop move along diagonal.
-	 */
-	protected boolean validateBishopMove() {
-		if (absRowDisp != absColDisp)
-			return false;
-		return isUnobstructedMove();
+	protected boolean isValidKnightMove(int rowDisp, int colDisp) {
+		return (Math.abs(rowDisp) == 1 && Math.abs(colDisp) == 2) || (Math.abs(rowDisp) == 2 && Math.abs(colDisp) == 1);
 	}
 
-	/**
-	 * Logic for classic queen move along row, column or diagonal.
-	 */
-	protected boolean validateQueenMove() {
-		if ((absRowDisp == 0) == (absColDisp == 0) == (absRowDisp != absColDisp))
-			return false;
-		return isUnobstructedMove();
+	protected boolean isValidBishopMove(PieceNotation[][] board, int[] start, int rowDisp, int colDisp) {
+		boolean isValid = Math.abs(rowDisp) == Math.abs(colDisp);
+		return isValid && isUnobstructed(board, start, rowDisp, colDisp);
+	}
+
+	protected boolean isValidQueenMove(PieceNotation[][] board, int[] start, int rowDisp, int colDisp) {
+		boolean isValid = ((rowDisp == 0) != (colDisp == 0)) || (Math.abs(rowDisp) == Math.abs(colDisp));
+		return isValid && isUnobstructed(board, start, rowDisp, colDisp);
 	}
 
 	/**
@@ -231,64 +297,45 @@ public class MoveValidator {
 	 * capture. 2) Check whether move from starting position triggers an en passant
 	 * attack on next move. 3) Check if move is simple forward move in column.
 	 */
-	protected boolean validatePawnMove() {
+	protected boolean isValidPawnMove(PieceNotation[][] board, int[] start, int[] end, int rowDisp, int colDisp,
+			boolean isWhiteMove, boolean isAttack, String enPassantSquare) {
 
-		if (!isValidPawnMovement())
-			return false;
-		if (!isValidPawnDirection())
+		int absRowDisp = Math.abs(rowDisp);
+		int absColDisp = Math.abs(colDisp);
+
+		if (!isValidPawnDirection(rowDisp, isWhiteMove) || absRowDisp > 2 || absColDisp > 1)
 			return false;
 
-		if (absColDisp == 1 && absRowDisp == 1) {
-			if (isPieceAttack()) {
-				chessMoves.add(ChessMove.CAPTURE);
-			} else if (isValidEnPassantAttack()) {
-				chessMoves.add(ChessMove.EN_PASSANT_CAPTURE);
-				chessMoves.add(ChessMove.CAPTURE);
-				moveResponseDTO.addPieceMove(new String[] { GameBoardServices.getSquare(startRow, endCol), "ep" });
-			} else {
-				return false;
-			}
-		} else if (absColDisp == 0 && absRowDisp == 2) {
-			if (isValidPawnInitialDouble()) {
-				chessMoves.add(ChessMove.PAWN_INITIAL_DOUBLE);
-				nextEnPassantTargetSquare = GameBoardServices.getSquare(startRow + (isWhiteMove ? -1 : 1), startCol);
-			} else {
-				return false;
-			}
-		} else if (absColDisp == 0 && absRowDisp == 1) {
-			if (!isPieceAttack()) {
-				chessMoves.add(ChessMove.SIMPLE_MOVE);
-			} else {
-				return false;
-			}
+		if (isValidEnPassantCapture(absRowDisp, absColDisp, isAttack, moveDTO.getEndPos(), enPassantSquare)) {
+			pieceMoves.add(new String[] { GameBoardServices.getPosition(start[0], end[1]), "ep" });
+			chessMoves.add(ChessMove.EN_PASSANT_CAPTURE);
+			chessMoves.add(ChessMove.CAPTURE);
+			return true;
 		}
 
-		return true;
+		if (isValidInitialDouble(board, start, absRowDisp, absColDisp, isWhiteMove, isAttack)) {
+			chessMoves.add(ChessMove.PAWN_INITIAL_DOUBLE);
+			return true;
+		}
+
+		log.info("not valid enpassant capture or initial double");
+		return absRowDisp == 1 && (absColDisp == 1 ? isAttack : !isAttack);
 	}
 
-	protected boolean isValidPawnMovement() {
-		return (absColDisp <= 1 && absRowDisp == 1) || (absColDisp == 0 && absRowDisp == 2);
+	protected boolean isValidPawnDirection(int rowDisp, boolean isWhiteMove) {
+		return (isWhiteMove ? 1 : -1) * rowDisp > 0;
 	}
 
-	protected boolean isValidPawnDirection() {
-		return (isWhiteMove ? 1 : -1) * rowDisplacement > 0;
+	protected boolean isValidInitialDouble(PieceNotation[][] board, int[] start, int absRowDisp, int absColDisp,
+			boolean isWhiteMove, boolean isAttack) {
+		log.info("checking is valid initial double?");
+		return absRowDisp == 2 && absColDisp == 0 && !isAttack && (start[0] == 6 || start[0] == 1)
+				&& isUnoccupied(board, isWhiteMove ? 5 : 2, start[1]);
 	}
 
-	protected boolean isValidEnPassantAttack() {
-		return gamePlay.getEnPassantTargetSquare() != null && gamePlay.getEnPassantTargetSquare().equals(endPos);
-	}
-
-	protected boolean isValidPawnInitialDouble() {
-		return (startRow == 1 || startRow == 6) && !isPieceAttack()
-				&& mockBoard[startRow + (isWhiteMove ? -1 : 1)][startCol] == null;
-	}
-
-	protected boolean isPieceAttack() {
-		return mockBoard[endRow][endCol] != null;
-	}
-
-	protected boolean isValidKingMove() {
-		return (absColDisp <= 1 && absRowDisp <= 1) || (absColDisp == 2 && absRowDisp == 0);
+	protected boolean isValidEnPassantCapture(int absRowDisp, int absColDisp, boolean isAttack, String endPos,
+			String enPassantSquare) {
+		return absRowDisp == 1 && absColDisp == 1 && !isAttack && enPassantSquare.equals(endPos);
 	}
 
 	/**
@@ -297,175 +344,99 @@ public class MoveValidator {
 	 * piece is in check at any point along castling move transition. Updates
 	 * castling rules accordingly within gamePlay object.
 	 */
-	protected boolean validateKingMove() {
+	protected boolean isValidKingMove(PieceNotation[][] board, String startPos, String endPos, int[] start, int rowDisp,
+			int colDisp, boolean isAttack, boolean isWhiteMove, String castling) {
 
-		if (!isValidKingMove())
+		int absRowDisp = Math.abs(rowDisp);
+		int absColDisp = Math.abs(colDisp);
+
+		boolean isValid = (absColDisp == 1 || absRowDisp == 1 || (absColDisp == 2 && absRowDisp == 0));
+
+		if (!isValid) {
 			return false;
+		}
 
-		if (absColDisp == 2)
-			return validateCastlingMove();
+		if (absColDisp == 2) {
+			return isValidCastling(board, start, startPos, endPos, isAttack, isWhiteMove, castling);
+		}
 
 		return true;
 	}
 
-	protected boolean validateCastlingMove() {
+	protected boolean isValidCastling(PieceNotation[][] board, int[] start, String startPos, String endPos,
+			boolean isAttack, boolean isWhiteMove, String castling) {
 
-		if (gamePlay.getCastling() == null)
+		log.info("checking for valid castle");
+		boolean isQueenSide;
+
+		if (castling == null || isAttack) {
 			return false;
-
-		switch (startPos + endPos) {
-		case "E1C1":
-			if (!gamePlay.getCastling().contains("Q"))
-				return false;
+		} else if (startPos.equals("E1") && endPos.equals("C1") && castling.contains("Q")) {
 			chessMoves.add(ChessMove.QUEEN_SIDE_CASTLE);
-			moveResponseDTO.addPieceMove(new String[] { "A1", "D1" });
-			break;
-		case "E1G1":
-			if (!gamePlay.getCastling().contains("K"))
-				return false;
+			pieceMoves.add(new String[] { "A1", "D1" });
+			isQueenSide = true;
+			log.info("Q");
+		} else if (startPos.equals("E1") && endPos.equals("G1") && castling.contains("K")) {
 			chessMoves.add(ChessMove.KING_SIDE_CASTLE);
-			moveResponseDTO.addPieceMove(new String[] { "H1", "F1" });
-			break;
-		case "E8C8":
-			if (!gamePlay.getCastling().contains("q"))
-				return false;
+			pieceMoves.add(new String[] { "H1", "F1" });
+			isQueenSide = false;
+			log.info("K");
+		} else if (startPos.equals("E8") && endPos.equals("C8") && castling.contains("q")) {
 			chessMoves.add(ChessMove.QUEEN_SIDE_CASTLE);
-			moveResponseDTO.addPieceMove(new String[] { "A8", "D8" });
-			break;
-		case "E8G8":
-			if (!gamePlay.getCastling().contains("k"))
-				return false;
+			pieceMoves.add(new String[] { "A8", "D8" });
+			isQueenSide = true;
+			log.info("q");
+		} else if (startPos.equals("E8") && endPos.equals("G8") && castling.contains("k")) {
 			chessMoves.add(ChessMove.KING_SIDE_CASTLE);
-			moveResponseDTO.addPieceMove(new String[] { "H8", "F8" });
-			break;
-		default:
+			pieceMoves.add(new String[] { "H8", "F8" });
+			isQueenSide = false;
+			log.info("k");
+		} else {
 			return false;
 		}
 
-		int colDirection = Integer.signum(colDisplacement);
+		log.info("now evaluating whether king can transition through squares without being blocked or in check");
+		for (int i = 0; i <= (isQueenSide ? 2 : 1); i++) {
+			int[] testSquare = { start[0], start[1] + i * (isQueenSide ? -1 : 1) };
 
-		if (isCastlingObstructed(colDirection))
-			return false;
+			if (i != 0 && board[testSquare[0]][testSquare[1]] != null) {
+				log.info("blocked");
+				return false;
+			}
 
-		if (isKingInCheckDuringCastle(colDirection))
-			return false;
+			if (isKingInCheck(board, testSquare, isWhiteMove ? GameColor.WHITE : GameColor.BLACK)) {
+				log.info("king is in check during transition");
+				return false;
+			}
+		}
 
 		return true;
-	}
-
-	protected boolean isCastlingObstructed(int colDirection) {
-		if (colDirection == -1) {
-			for (int i = 1; i <= 2; i++) {
-				if (mockBoard[startRow][startCol - i] != null) {
-					return true;
-				}
-			}
-		} else if (colDirection == 1) {
-			for (int i = 1; i <= 1; i++) {
-				if (mockBoard[startRow][startCol + i] != null) {
-					return true;
-				}
-			}
-		} else {
-			return true;
-		}
-
-		return false;
-	}
-
-	// Checks starting position and transition for check (not final position)
-	protected boolean isKingInCheckDuringCastle(int colDirection) {
-		for (int i = 0; i <= 2; i++) {
-			if (isKingInCheck(new int[] { startRow, startCol + i * colDirection }, getPlayerColor())) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Updates MoveResponseDTO with move validity and piece movement(s).
-	 */
-	protected void generateMoveResponse() {
-		String[] move = { startPos, endPos };
-		moveResponseDTO.addPieceMove(move);
-
-		if (movedPiece.getType() != PieceType.PAWN) { // handled explicitly in pawn move logic
-			chessMoves.add(isPieceAttack() ? ChessMove.CAPTURE : ChessMove.SIMPLE_MOVE);
-		}
-	}
-
-	/**
-	 * Generates String of extended chess move notation for tracking game history.
-	 * MoveResponseDTO object updated with official chess move.
-	 */
-	protected void generateOfficialMove(MoveDTO moveDTO) {
-		String move = "";
-
-		if (gamePlay.getHalfMoves() % 2 == 1) {
-			move += String.valueOf((gamePlay.getHalfMoves() - 1) / 2 + 1) + ".";
-		}
-
-		if (chessMoves.contains(ChessMove.KING_SIDE_CASTLE)) {
-			move += "O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+ " : " ");
-		} else if (chessMoves.contains(ChessMove.QUEEN_SIDE_CASTLE)) {
-			move += "O-O-O" + (chessMoves.contains(ChessMove.CHECK) ? "+ " : " ");
-		} else {
-			move += movedPiece.toString() + startPos.toLowerCase() + (chessMoves.contains(ChessMove.CAPTURE) ? "x" : "")
-					+ endPos.toLowerCase() + (chessMoves.contains(ChessMove.EN_PASSANT_CAPTURE) ? "ep" : "")
-					+ (moveDTO.getPromotionPiece() != null ? "=" + moveDTO.getPromotionPiece() : "")
-					+ (chessMoves.contains(ChessMove.CHECK) ? "+ " : "")
-					+ (chessMoves.contains(ChessMove.CHECKMATE) ? "#" : "") + " ";
-		}
-		moveResponseDTO.setMoveNotation(move);
-	}
-
-	protected PieceNotation getKingNotation(GameColor kingColor) {
-		return PieceNotation.valueOf(kingColor == GameColor.WHITE ? "K" : "k");
-	}
-
-	/**
-	 * Evaluates whether the king of the indicated color is in check. Finds piece
-	 * via GameBoardServices
-	 */
-	protected int[] findKing(GameColor kingColor) {
-		PieceNotation king = getKingNotation(kingColor);
-		return GameBoardServices.findKingPosition(mockBoard, king);
 	}
 
 	/**
 	 * Checks whether the king of the indicated color and position is under attack
 	 * in any direction and within reach of knight.
 	 */
-	protected boolean isKingInCheck(int[] kingPos, GameColor kingColor) {
-		int row = kingPos[0];
-		int col = kingPos[1];
-
-		if (isKingUnderAttackByKnight(row, col, kingColor))
-			return true;
-		if (isKingUnderStraightLineAttack(row, col, kingColor))
-			return true;
-		if (isKingUnderDiagonalLineAttack(row, col, kingColor))
-			return true;
-
-		return false;
+	protected boolean isKingInCheck(PieceNotation[][] board, int[] kingPos, GameColor kingColor) {
+		log.info("checking if king in check function");
+		return canKnightCheck(board, kingPos, kingColor) || canStraightCheck(board, kingPos, kingColor)
+				|| canDiagonalCheck(board, kingPos, kingColor);
 	}
 
 	/**
 	 * Knight-specific logic for evaluating whether the king is in check.
 	 */
-	protected boolean isKingUnderAttackByKnight(int kingRow, int kingCol, GameColor kingColor) {
+	protected boolean canKnightCheck(PieceNotation[][] board, int[] square, GameColor color) {
+		log.info("can knight check");
 
-		int[][] indices = { { 1, 2 }, { 2, 1 }, { -1, -2 }, { -2, -1 }, { 1, -2 }, { -2, 1 }, { -1, 2 }, { 2, -1 } };
+		for (int[] i : PieceMovement.KNIGHT.getMoves()) {
+			int testRow = square[0] + i[0];
+			int testCol = square[1] + i[1];
 
-		for (int[] i : indices) {
-			if (isPositionOnBoard(kingRow + i[0], kingCol + i[1])) {
-				PieceNotation attackPiece = mockBoard[kingRow + i[0]][kingCol + i[1]];
-				if (attackPiece != null) {
-					if (attackPiece.getColor() == kingColor)
-						continue;
-					if (attackPiece.getType() == PieceType.KNIGHT)
-						return true;
+			if (isPositionOnBoard(testRow, testCol)) {
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null && testSquare.getType() == PieceType.KNIGHT && testSquare.getColor() != color) {
+					return true;
 				}
 			}
 		}
@@ -476,27 +447,33 @@ public class MoveValidator {
 	 * Row/Col-specific logic for evaluating whether the king is in check. Looks for
 	 * unobstructed opposite-color queen, rook, nearby king.
 	 */
-	protected boolean isKingUnderStraightLineAttack(int kingRow, int kingCol, GameColor kingColor) {
-		int[][] indices = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+	protected boolean canStraightCheck(PieceNotation[][] board, int[] square, GameColor color) {
+		log.info("can straight check");
 
-		for (int[] i : indices) {
+		for (int[] i : PieceMovement.STRAIGHT.getMoves()) {
 			int count = 1;
-			while (isPositionOnBoard(kingRow + i[0] * count, kingCol + i[1] * count)) {
-				PieceNotation attackPiece = mockBoard[kingRow + i[0] * count][kingCol + i[1] * count];
-				if (attackPiece != null) {
-					if (attackPiece.getColor() == kingColor)
+			int testRow = square[0] + i[0] * count;
+			int testCol = square[1] + i[1] * count;
+
+			while (isPositionOnBoard(testRow, testCol)) {
+
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null) {
+					if (testSquare.getColor() == color) {
 						break;
-					if (attackPiece.getType() == PieceType.QUEEN)
+					}
+					if (testSquare.getType() == PieceType.QUEEN || testSquare.getType() == PieceType.ROOK) {
 						return true;
-					if (attackPiece.getType() == PieceType.ROOK)
-						return true;
-					if (attackPiece.getType() == PieceType.KING
-							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
+					}
+					if (testSquare.getType() == PieceType.KING && count == 1) {
 						return true;
 					}
 					break;
 				}
+
 				count++;
+				testRow = square[0] + i[0] * count;
+				testCol = square[1] + i[1] * count;
 			}
 		}
 		return false;
@@ -507,102 +484,258 @@ public class MoveValidator {
 	 * for unobstructed opposite-color queen, bishop, nearby king or nearby pawn (on
 	 * attacking diagonal).
 	 */
-	protected boolean isKingUnderDiagonalLineAttack(int kingRow, int kingCol, GameColor kingColor) {
-		int[][] indices = { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } };
+	protected boolean canDiagonalCheck(PieceNotation[][] board, int[] square, GameColor color) {
+		log.info("can diag check");
 
-		for (int[] i : indices) {
+		for (int[] i : PieceMovement.DIAGONAL.getMoves()) {
 			int count = 1;
-			while (isPositionOnBoard(kingRow + i[0] * count, kingCol + i[1] * count)) {
-				PieceNotation attackPiece = mockBoard[kingRow + i[0] * count][kingCol + i[1] * count];
-				if (attackPiece != null) {
-					if (attackPiece.getColor() == kingColor)
+			int testRow = square[0] + i[0] * count;
+			int testCol = square[1] + i[1] * count;
+
+			while (isPositionOnBoard(testRow, testCol)) {
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null) {
+					if (testSquare.getColor() == color) {
 						break;
-					if (attackPiece.getType() == PieceType.QUEEN)
-						return true;
-					if (attackPiece.getType() == PieceType.BISHOP)
-						return true;
-					if (attackPiece.getType() == PieceType.KING
-							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
+					}
+					if (testSquare.getType() == PieceType.QUEEN || testSquare.getType() == PieceType.BISHOP) {
 						return true;
 					}
-					if (attackPiece.getType() == PieceType.PAWN
-							&& (kingRow + (kingColor == GameColor.WHITE ? -1 : 1)) == (kingRow + i[0] * count)) {
+					if (testSquare.getType() == PieceType.KING && count == 1) {
+						return true;
+					}
+					if (testSquare.getType() == PieceType.PAWN && count == 1
+							&& isValidPawnDirection(i[0], color != GameColor.WHITE)) {
 						return true;
 					}
 					break;
 				}
+
 				count++;
+				testRow = square[0] + i[0] * count;
+				testCol = square[1] + i[1] * count;
 			}
 		}
 		return false;
 	}
 
-	protected boolean isPositionOnBoard(int row, int col) {
-		return row >= 0 && row <= 7 && col >= 0 && col <= 7;
+	/**
+	 * Methods for evaluating check, checkmate and stalemate
+	 */
+
+	public GameOutcome evaluateGameStatus() {
+		log.info("eval game status");
+		// TODO make sure to chessmove check if check but not checkmate
+
+		int[] oppKingPos = findKing(mockBoard, !isWhiteMove);
+
+		if (isCheckmate(mockBoard, oppKingPos, !isWhiteMove)) {
+			return GameOutcome.CHECKMATE;
+		}
+
+		if (isStalemate(mockBoard, !isWhiteMove ? GameColor.WHITE : GameColor.BLACK)) {
+			return GameOutcome.STALEMATE;
+		}
+		return null;
 	}
 
-	protected boolean isOpponentKingInCheckmate(int[] kingPos, GameColor kingColor) {
+	protected boolean isCheckmate(PieceNotation[][] board, int[] kingPos, boolean isWhiteKing) {
+		log.info("check for checkmate");
+		List<int[]> attackPositions = getAllAccessingPiecePositionsByColor(board, kingPos,
+				!isWhiteKing ? GameColor.WHITE : GameColor.BLACK, true, enPassantSquare);
+
+		log.info("no atk pieces: {}", attackPositions.size());
+
+		if (attackPositions.size() == 0) {
+			return false;
+		}
+
+		chessMoves.add(ChessMove.CHECK);
+
+		if (canBlockCheck(board, attackPositions, kingPos, isWhiteKing ? GameColor.WHITE : GameColor.BLACK,
+				enPassantSquare)) {
+			return false;
+		}
+
+		chessMoves.remove(ChessMove.CHECK);
+		chessMoves.add(ChessMove.CHECKMATE);
+
+		return true;
+	}
+
+	/**
+	 * Checks whether the king of the indicated color and position is under attack
+	 * in any direction and within reach of knight.
+	 */
+	protected List<int[]> getAllAccessingPiecePositionsByColor(PieceNotation[][] board, int[] square, GameColor color,
+			boolean isAttack, String enPassantSquare) {
+
+		List<int[]> positions = new ArrayList<>();
+
+		positions.addAll(getAllPiecePositionsWithKnightAccessByColor(board, square, color));
+		positions.addAll(getAllPiecePositionsWithStraightAccessByColor(board, square, color, isAttack));
+		positions
+				.addAll(getAllPiecePositionsWithDiagonalAccessByColor(board, square, color, isAttack, enPassantSquare));
+
+		return positions;
+	}
+
+	/**
+	 * Knight-specific logic for evaluating whether the king is in check.
+	 */
+	protected List<int[]> getAllPiecePositionsWithKnightAccessByColor(PieceNotation[][] board, int[] square,
+			GameColor color) {
+		log.info("AllKnightPiecesAccessingSquare");
+		List<int[]> positions = new ArrayList<>();
+
+		for (int[] i : PieceMovement.KNIGHT.getMoves()) {
+			int testRow = square[0] + i[0];
+			int testCol = square[1] + i[1];
+
+			if (isPositionOnBoard(testRow, testCol)) {
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null && testSquare.getColor() == color && testSquare.getType() == PieceType.KNIGHT) {
+					positions.add(new int[] { testRow, testCol });
+				}
+			}
+		}
+		return positions;
+	}
+
+	/**
+	 * Row/Col-specific logic for evaluating whether the king is in check. Looks for
+	 * unobstructed opposite-color queen, rook, nearby king.
+	 */
+	protected List<int[]> getAllPiecePositionsWithStraightAccessByColor(PieceNotation[][] board, int[] square,
+			GameColor color, boolean isAttack) {
+		List<int[]> positions = new ArrayList<>();
+		GameColor oppColor = getOppositeColor(color);
+
+		log.info("AllStraightPiecesAccessingSquare");
+		for (int[] i : PieceMovement.STRAIGHT.getMoves()) {
+			int count = 1;
+			int testRow = square[0] + i[0] * count;
+			int testCol = square[1] + i[1] * count;
+
+			while (isPositionOnBoard(testRow, testCol)) {
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null) {
+					if (testSquare.getColor() == oppColor) {
+						log.info("break; wrong color");
+						break;
+					}
+
+					if (testSquare.getType() == PieceType.QUEEN || testSquare.getType() == PieceType.ROOK) {
+						log.info("queen/rook");
+						positions.add(new int[] { testRow, testCol });
+					}
+
+					// TODO
+					// if (testSquare.getType() == PieceType.KING && count == 1) {
+					// log.info("king");
+					// positions.add(new int [] {testRow, testCol});
+					// }
+
+					if (!isAttack && testSquare.getType() == PieceType.PAWN && i[1] == 0) {
+						int rowDisp = i[0] * count;
+						int absRowDisp = Math.abs(rowDisp);
+						log.info("pawn");
+						if (isValidPawnDirection(rowDisp, color == GameColor.WHITE) && absRowDisp <= 2) {
+							if (absRowDisp == 1 || isValidInitialDouble(board, new int[] { testRow, testCol },
+									absRowDisp, 0, color == GameColor.WHITE, isAttack)) {
+								log.info("valid pawn");
+								positions.add(new int[] { testRow, testCol });
+							}
+						}
+					}
+					break;
+				}
+				count++;
+				testRow = square[0] + i[0] * count;
+				testCol = square[1] + i[1] * count;
+			}
+		}
+		return positions;
+	}
+
+	/**
+	 * Diagonal-specific logic for evaluating whether the king is in check. Looks
+	 * for unobstructed opposite-color queen, bishop, nearby king or nearby pawn (on
+	 * attacking diagonal).
+	 */
+	protected List<int[]> getAllPiecePositionsWithDiagonalAccessByColor(PieceNotation[][] board, int[] square,
+			GameColor color, boolean isAttack, String enPassantSquare) {
+		List<int[]> positions = new ArrayList<>();
+		GameColor oppColor = getOppositeColor(color);
+
+		log.info("AllDiagonalPiecesAccessingSquare");
+		for (int[] i : PieceMovement.DIAGONAL.getMoves()) {
+			int count = 1;
+			int testRow = square[0] + i[0] * count;
+			int testCol = square[1] + i[1] * count;
+
+			while (isPositionOnBoard(testRow, testCol)) {
+				PieceNotation testSquare = board[testRow][testCol];
+				if (testSquare != null) {
+					if (testSquare.getColor() == oppColor) {
+						log.info("wrong color; doesn't match");
+						break;
+					}
+					if (testSquare.getType() == PieceType.QUEEN || testSquare.getType() == PieceType.BISHOP) {
+						log.info("queen/bish");
+						positions.add(new int[] { testRow, testCol });
+					}
+
+					// TODO
+					// if (testSquare.getType() == PieceType.KING && count == 1) {
+					// log.info("king");
+					// positions.add(new int [] {testRow, testCol});
+					// }
+
+					if (testSquare.getType() == PieceType.PAWN && count == 1) {
+						int rowDisp = i[0] * count;
+						log.info("pawn");
+						if (isValidPawnDirection(rowDisp, color == GameColor.WHITE)) {
+							if (isAttack) {
+								log.info("valid pawn");
+								positions.add(new int[] { testRow, testCol });
+							} else if (GameBoardServices.getPosition(testRow, testCol).equals(enPassantSquare)) {
+								log.info("valid en passant");
+							}
+						}
+					}
+					break;
+				}
+				count++;
+				testRow = square[0] + i[0] * count;
+				testCol = square[1] + i[1] * count;
+			}
+		}
+		return positions;
+	}
+
+	protected boolean canBlockCheck(PieceNotation[][] board, List<int[]> attackPositions, int[] kingPos,
+			GameColor kingColor, String enPassantSquare) {
 		log.info("testing if opponent's king is in checkmate");
-		int row = kingPos[0];
-		int col = kingPos[1];
 
-		if (canKingMoveOutOfCheck(row, col, kingColor)) {
+		if (canKingMove(board, kingPos, kingColor)) {
 			log.info("opponent's king can move out of check");
-			return false;
-		} else if (canAnyPieceDisruptCheck(row, col, kingColor)) {
-			log.info("opponent's king can be saved via capture or blocking");
-			return false;
-		} else {
 			return true;
+		} else if (canDisruptCheck(board, attackPositions, kingPos, kingColor)) {
+			log.info("opponent's king can be saved via capture or blocking");
+			return true;
+		} else {
+			return false;
 		}
 	}
 
-	protected boolean canKingMoveOutOfCheck(int kingRow, int kingCol, GameColor kingColor) {
-		log.info("checking whether opponent's king can move out of check");
-		PieceNotation king = getKingNotation(kingColor);
-		mockBoard[kingRow][kingCol] = null;
-		int row, col;
-
-		for (int i = -1; i <= 1; i++) {
-			for (int j = -1; j <= 1; j++) {
-
-				if (i == 0 && j == 0)
-					continue;
-
-				row = kingRow + i;
-				col = kingCol + j;
-
-				log.info("checking whether square [" + row +"][" + col +"] is under attack");
-				
-				if (!isPositionOnBoard(row, col)) {
-					log.info("tested position is not on board");
-					continue;
-				}
-				
-				if (mockBoard[row][col] != null && mockBoard[row][col].getColor() == kingColor) {
-					log.info("tested position has a piece that is the same color as opponent (cannot be captured)");
-					continue;
-				}
-				
-				if (!isKingInCheck(new int[] { row, col }, kingColor)) {
-					log.info("opponent's king can move out of check");
-					return true;
-				}
-			}
-		}
-
-		mockBoard[kingRow][kingCol] = king;
-		return false;
-	}
-
-	protected boolean canAnyPieceDisruptCheck(int kingRow, int kingCol, GameColor kingColor) {
+	protected boolean canDisruptCheck(PieceNotation[][] board, List<int[]> attackPositions, int[] kingPos,
+			GameColor kingColor) {
 
 		log.info("testing whether can any of the opponent's pieces can disrupt checkmate");
 		log.info("identifying pieces that are putting opponent's king in check");
-		
-		List<Integer[]> attackPositions = getPositionOfColoredPieceWithAccessToSquare(kingColor, kingRow, kingCol, true);
 		log.info(Arrays.toString(attackPositions.get(0)));
-		
+
 		/**
 		 * Ability of king to move to safe square already accounted for by the time this
 		 * function is called; therefore, being in check by two pieces precludes the
@@ -610,261 +743,206 @@ public class MoveValidator {
 		 */
 
 		if (attackPositions.size() > 1) {
-			log.info("more than 1 attack position");
+			log.info("more than 1 attack position; king unable to move -> checkmate");
 			return false;
 		}
-		
-		int attackerRow = attackPositions.get(0)[0];
-		int attackerCol = attackPositions.get(0)[1];
-		int atkRowDisp =  attackerRow - kingRow;
-		int atkColDisp = attackerCol - kingCol;
+
+		int[] atkPos = attackPositions.get(0);
+
+		// can attacking piece be captured?
+		List<int[]> offensiveOptions = getAllAccessingPiecePositionsByColor(board, atkPos, kingColor, true,
+				enPassantSquare);
+
+		for (int[] offPos : offensiveOptions) {
+			if (canPieceMove(board, offPos, attackPositions.get(0), kingPos, kingColor)) {
+				return true;
+			}
+		}
+
+		int attackerRow = atkPos[0];
+		int attackerCol = atkPos[1];
+		int atkRowDisp = attackerRow - kingPos[0];
+		int atkColDisp = attackerCol - kingPos[1];
 		int rowSign = Integer.signum(atkRowDisp);
 		int colSign = Integer.signum(atkColDisp);
 		int disp = Math.max(Math.abs(atkColDisp), Math.abs(atkRowDisp));
 
-		List<Integer[]> disruptivePositions = new ArrayList<>();
-		
-		// check disruption via capture
-		disruptivePositions = getPositionOfColoredPieceWithAccessToSquare(kingColor, attackerRow, attackerCol, false);
+		List<int[]> defensiveOptions = new ArrayList<>();
 
-		log.info("identifying pieces that can disrupt opponent's check: by attack");
-		log.info(disruptivePositions.stream().map(Arrays::toString).reduce("", (s1,s2) -> s1+s2+" "));
-		
-		
-		if (isValidDisruption(disruptivePositions, attackerRow, attackerCol, kingColor)) {
-			return true;
-		}
-		
+		// check blocking moves
+
 		log.info("identifying pieces that can disrupt opponent's check: by blocking");
 		for (int i = 1; i < disp; i++) {
-			
-			disruptivePositions = getPositionOfColoredPieceWithAccessToSquare(kingColor, attackerRow - i*rowSign, attackerCol - i*colSign, false);
-			log.info(disruptivePositions.stream().map(Arrays::toString).reduce("", (s1,s2) -> s1+s2+" "));
-			
-			if (isValidDisruption(disruptivePositions, attackerRow -i*rowSign, attackerCol-i*colSign, kingColor)) {
-				return true;
+			int tempRow = attackerRow - i * rowSign;
+			int tempCol = attackerCol - i * colSign;
+			int[] tempPos = new int[] { tempRow, tempCol };
+
+			defensiveOptions = getAllAccessingPiecePositionsByColor(board, tempPos, kingColor, false, enPassantSquare);
+
+			log.info(defensiveOptions.stream().map(Arrays::toString).reduce("", (s1, s2) -> s1 + s2 + " "));
+
+			for (int[] defPos : defensiveOptions) {
+				log.info(Arrays.toString(defPos));
+				if (canPieceMove(board, defPos, tempPos, kingPos, kingColor)) {
+					return true;
+				}
 			}
 		}
 
 		return false;
 	}
 
-	protected boolean isValidDisruption(List<Integer[]> disrupt, int row, int col, GameColor color) {
-		log.info("determining if disruption is valid: i.e., moving piece removes opponent's king from check");
-		PieceNotation square = mockBoard[row][col];
-		PieceNotation piece;
-		int rowPos, colPos;
-		
-		if (disrupt.size() == 0) 
-			return false;
-					
-		for (Integer[] pos : disrupt) {
-			rowPos = pos[0];
-			colPos = pos[1];
-			piece = mockBoard[rowPos][colPos];
-		
-			if (piece.getType() == PieceType.PAWN && square == null && colPos != col) { //no diagonal moves unless attack
-				log.info("*** No diagonal pawn moves unless attack ***");
-				return false;
+	protected boolean isStalemate(PieceNotation[][] board, GameColor color) {
+
+		int[] kingPos = findKing(board, color == GameColor.WHITE);
+		log.info("king for checking stalemate: {}", board[kingPos[0]][kingPos[1]].toString());
+
+		// scan board for pieces with specified color
+		for (int row = 0; row < 8; row++) {
+			for (int col = 0; col < 8; col++) {
+				PieceNotation testSq = board[row][col];
+				if (testSq != null && testSq.getColor() == color) {
+
+					int[] start = { row, col };
+					log.info("stalemate check on" + row + col + board[row][col].toString());
+
+					switch (testSq.getType()) {
+					case ROOK:
+						for (int[] i : PieceMovement.STRAIGHT.getMoves()) {
+							if (canPieceMove(board, start, new int[] { row + i[0], col + i[1] }, kingPos, color)) {
+								return false;
+							}
+						}
+						break;
+					case BISHOP:
+						for (int[] i : PieceMovement.DIAGONAL.getMoves()) {
+							if (canPieceMove(board, start, new int[] { row + i[0], col + i[1] }, kingPos, color)) {
+								return false;
+							}
+						}
+						break;
+					case QUEEN:
+						for (int[] i : PieceMovement.OMNI.getMoves()) {
+							if (canPieceMove(board, start, new int[] { row + i[0], col + i[1] }, kingPos, color)) {
+								return false;
+							}
+						}
+						break;
+					case KNIGHT:
+						for (int[] i : PieceMovement.KNIGHT.getMoves()) {
+							if (canPieceMove(board, start, new int[] { row + i[0], col + i[1] }, kingPos, color)) {
+								return false;
+							}
+						}
+						break;
+					case PAWN:
+						int[][] index = color == GameColor.WHITE ? PieceMovement.WHITE_PAWN.getMoves()
+								: PieceMovement.BLACK_PAWN.getMoves();
+						log.info(Arrays.toString(index));
+						for (int[] i : index) {
+							int tempRow = row + i[0];
+							int tempCol = col + i[1];
+
+							if (!isPositionOnBoard(tempRow, tempCol)) {
+								return false;
+							}
+
+							if (i[1] == 0 && Math.abs(i[0]) != 2 && board[tempRow][tempCol] == null
+									&& canPieceMove(board, start, new int[] { tempRow, tempCol }, kingPos, color)) {
+								return false;
+							}
+
+							if (Math.abs(i[1]) == 1) {
+								if (board[tempRow][tempCol] == null
+										&& GameBoardServices.getPosition(tempRow, tempCol).equals(enPassantSquare)) {
+									return false;
+								}
+								if (board[tempRow][tempCol] != null && board[tempRow][tempCol].getColor() != color) {
+									return false;
+								}
+							}
+						}
+						break;
+					case KING:
+						if (canKingMove(board, kingPos, color)) {
+							return false;
+						}
+						break;
+
+					default:
+						break;
+					}
+
+				}
 			}
-				
-			mockBoard[row][col] = piece;
-			mockBoard[rowPos][colPos] = null;
-			if (isKingInCheck(findKing(color), color)) {
-				mockBoard[row][col] = square;
-				mockBoard[rowPos][colPos] = piece;
+		}
+		return true;
+	}
+
+	protected boolean canKingMove(PieceNotation[][] board, int[] kingPos, GameColor kingColor) {
+		log.info("checking whether opponent's king can move out of check");
+		PieceNotation king = board[kingPos[0]][kingPos[1]];
+		board[kingPos[0]][kingPos[1]] = null;
+
+		for (int[] i : PieceMovement.OMNI.getMoves()) {
+
+			int testRow = kingPos[0] + i[0];
+			int testCol = kingPos[1] + i[1];
+
+			log.info("checking whether square [" + testRow + "][" + testCol + "] is under attack");
+
+			if (!isPositionOnBoard(testRow, testCol)) {
 				continue;
-			} else {
-				mockBoard[row][col] = square;
-				mockBoard[rowPos][colPos] = piece;
+			}
+
+			if (board[testRow][testCol] != null && board[testRow][testCol].getColor() == kingColor) {
+				log.info("tested position has a piece that is the same color as opponent (cannot be captured)");
+				continue;
+			}
+
+			if (!isKingInCheck(board, new int[] { testRow, testCol }, kingColor)) {
+				log.info("opponent's king can move out of check");
+				board[kingPos[0]][kingPos[1]] = king;
 				return true;
 			}
 		}
+
+		board[kingPos[0]][kingPos[1]] = king;
 		return false;
 	}
-	
-	protected List<Integer[]> getPositionOfColoredPieceWithAccessToSquare(GameColor color, int row, int col,
-			boolean isAttack) {
-		
-		log.info("getPositionOfColoredPieceWithAccessToSquare");
-		List<Integer[]> squares = new ArrayList<>();
 
-		findAccessibleKnights(squares, row, col, color, isAttack);
-		findAccessibleStraightLines(squares, row, col, color, isAttack);
-		findAccessibleDiagonalLinesWithPawnAttack(squares, row, col, color, isAttack);
-		
-		log.info("all squares found that can attack or disrupt check at " + row + " " + col + ": ");
-		
-		if (!isAttack) {
-			findAccessiblePawnMove(squares, row, col, color);
+	protected boolean canPieceMove(PieceNotation[][] board, int[] start, int[] end, int[] kingPos,
+			GameColor kingColor) {
+
+		if (!isPositionOnBoard(end[0], end[1])) {
+			return false;
 		}
 
-		return squares;
-	}
+		PieceNotation piece = board[start[0]][start[1]];
+		PieceNotation temp = board[end[0]][end[1]];
 
-	protected void findAccessibleKnights(List<Integer[]> squares, int row, int col, GameColor color, boolean isAttackingKing) {
-
-		int[][] indices = { { 1, 2 }, { 2, 1 }, { -1, -2 }, { -2, -1 }, { 1, -2 }, { -2, 1 }, { -1, 2 }, { 2, -1 } };
-
-		for (int[] i : indices) {
-			if (isPositionOnBoard(row + i[0], col + i[1])) {
-				log.info("checking square for knight:" + (row + i[0]) + (col + i[1]));
-				PieceNotation attackPiece = mockBoard[row + i[0]][col + i[1]];
-				if (attackPiece != null) {
-					if ((isAttackingKing && attackPiece.getColor() == color) || (!isAttackingKing && attackPiece.getColor() != color)) {
-						   continue;
-						}
-					
-					if (attackPiece.getType() == PieceType.KNIGHT)
-						squares.add(new Integer[] { row + i[0], col + i[1] });
-				}
-			}
+		if (temp != null && piece.getColor() == temp.getColor()) {
+			return false;
 		}
-	}
 
-	protected void findAccessibleStraightLines(List<Integer[]> squares, int row, int col, GameColor color, boolean isAttackingKing) {
-		int[][] indices = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+		// move piece
 
-		for (int[] i : indices) {
-			int count = 1;
-			while (isPositionOnBoard(row + i[0] * count, col + i[1] * count)) {
-				log.info("checking square for straight:" + (row + i[0] * count) + (col + i[1] * count));
-				PieceNotation attackPiece = mockBoard[row + i[0] * count][col + i[1] * count];
-				if (attackPiece != null) {
-					if ((isAttackingKing && attackPiece.getColor() == color) || (!isAttackingKing && attackPiece.getColor() != color)) {
-						   break;
-						}
+		board[start[0]][start[1]] = null;
+		board[end[0]][end[1]] = piece;
 
-					if (attackPiece.getType() == PieceType.QUEEN) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else if (attackPiece.getType() == PieceType.ROOK) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else if (attackPiece.getType() == PieceType.KING
-							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else {
-						break;
-					}
-				}
-				count++;
-			}
+		// check for mate
+		if (!isKingInCheck(board, kingPos, kingColor)) {
+			log.info(Arrays.toString(start));
+			log.info(Arrays.toString(end));
+			log.info(Arrays.toString(kingPos));
+			board[start[0]][start[1]] = piece;
+			board[end[0]][end[1]] = temp;
+			return true;
 		}
+
+		board[start[0]][start[1]] = piece;
+		board[end[0]][end[1]] = temp;
+		return false;
 	}
 
-	protected void findAccessibleDiagonalLinesWithPawnAttack(List<Integer[]> squares, int row, int col,
-			GameColor color, boolean isAttackingKing) {
-		int[][] indices = { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } };
-
-		for (int[] i : indices) {
-			int count = 1;
-			while (isPositionOnBoard(row + i[0] * count, col + i[1] * count)) {
-				log.info("checking square for diag:" + (row + i[0] * count) + (col + i[1] * count));
-				PieceNotation attackPiece = mockBoard[row + i[0] * count][col + i[1] * count];
-				if (attackPiece != null) {
-					log.info("same color?");
-					if ((isAttackingKing && attackPiece.getColor() == color) || (!isAttackingKing && attackPiece.getColor() != color)) {
-						   break;
-						}
-					log.info("not same color");
-					
-					if (attackPiece.getType() == PieceType.QUEEN) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else if (attackPiece.getType() == PieceType.BISHOP) {
-						log.info("BISHOP");
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else if (attackPiece.getType() == PieceType.KING
-							&& (Math.abs(i[0] * count) == 1 || Math.abs(i[1] * count) == 1)) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						break;
-					} else if (attackPiece.getType() == PieceType.PAWN
-							&& (row + (color == GameColor.WHITE ? -1 : 1)) == (row + i[0] * count)) {
-						squares.add(new Integer[] { row + i[0] * count, col + i[1] * count });
-						log.info("PAWN" + (row + i[0] * count) + (col + i[1] * count));
-						break;
-					} else {
-						log.info("not any pieces");
-						break;
-					}
-				}
-				count++;
-			}
-		}
-	}
-
-	protected void findAccessiblePawnMove(List<Integer[]> squares, int row, int col, GameColor color) {
-		log.info("finding accesible pawn forward moves");
-		int direction = color == GameColor.WHITE ? 1 : -1;
-		boolean doubleReach;
-		PieceNotation piece;
-		
-		if (color == GameColor.WHITE) {
-			log.info("white");
-			
-			doubleReach = row == 4;
-			
-			log.info("double:" + doubleReach);
-			log.info(":" + (row+direction) + col);
-			log.info(":" + (row+2*direction) + col);
-			
-			if (!isPositionOnBoard(row + direction, col)) {
-				return;
-			}
-			
-			piece = mockBoard[row + direction][col];
-			
-			if (piece != null) {
-				if (piece.getType() == PieceType.PAWN && piece.getColor() == color) {
-					squares.add(new Integer[] { row + direction, col });
-				}
-				return;
-			} 
-			
-			if (doubleReach) {
-				if (!isPositionOnBoard(row + 2*direction, col)) {
-					return;
-				}
-			
-				piece = mockBoard[row + 2*direction][col];
-		
-				if (piece != null && piece.getType() == PieceType.PAWN && piece.getColor() == color) {
-					squares.add(new Integer[] { row + 2*direction, col });
-				}
-			}
-			
-		} else {
-			doubleReach = row == 3;
-			log.info("black double:" + doubleReach);
-			log.info(":" + (row+direction) + col);
-			log.info(":" + (row+2*direction) + col);
-			if (!isPositionOnBoard(row + direction, col)) {
-				return;
-			}
-			
-			piece = mockBoard[row + direction][col];
-
-			if (piece != null) {
-				if (piece.getType() == PieceType.PAWN && piece.getColor() == color) {
-					squares.add(new Integer[] { row + direction, col });
-				}
-				return;
-			} 
-			
-			if (doubleReach) {
-				if (!isPositionOnBoard(row + 2*direction, col)) {
-					return;
-				}
-			
-				piece = mockBoard[row + 2*direction][col];
-		
-				if (piece != null && piece.getType() == PieceType.PAWN && piece.getColor() == color) {
-					squares.add(new Integer[] { row + 2*direction, col });
-				}
-			}
-		}
-	}
 }

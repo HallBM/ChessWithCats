@@ -261,17 +261,17 @@ public class GameController {
 		Long gameId = Long.parseLong(moveDTO.getGameId());
 		Game game = gameRepo.findById(gameId).get();
 		GamePlay gamePlay = game.getGamePlay();
-	
-		MoveResponseDTO moveResponseDTO = game.getMoveValidator().validate(moveDTO, game.getGamePlay());
-
+		MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
+		
+		boolean isValidMove = game.getMoveValidator().validateMove(moveDTO, game.getGamePlay());
+		
 		if (game.getStyle() == GameStyle.AMBIGUOUS) {
-			if (moveResponseDTO != null) {
+			if (isValidMove) {
 				gamePlay.setMoveAttempts(0);
 			} else {
 				if (gamePlay.getMoveAttempts() <2) {
 					gamePlay.incrementMoveAttempts();
 				} else {
-					moveResponseDTO = new MoveResponseDTO();
 					moveResponseDTO.setMoveNotation("XXX ");
 					gamePlay.setMoveAttempts(0);
 				}
@@ -279,23 +279,11 @@ public class GameController {
 			gamePlayRepo.save(gamePlay);
 		}
 
-		if (moveResponseDTO == null) {
+		if (!isValidMove) {
 			return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.CONFLICT);
 		}
 		
-		gameServ.finalizeAndSaveGameState(game, moveResponseDTO, moveDTO.getPromotionPiece());
-
-		// TODO: POC: check ==> checkmate; update with real implementation of checking
-		// checkmate/stalemate
-
-		if (moveResponseDTO.getGameOutcome() == GameOutcome.CHECKMATE) {
-			game.setOutcome(moveResponseDTO.getGameOutcome());
-			game.setWinner(
-					gamePlay.getHalfMoves() % 2 == 0 ? game.getWhite().getUsername() : game.getBlack().getUsername());
-			game.setMoves(gamePlay.getMoves().toString());
-			game.setGamePlay(null);
-			gameRepo.save(game);
-		}
+		moveResponseDTO = gameServ.updateGameState(game, moveDTO);
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		moveUpdateSSEController.sendMove(objectMapper.writeValueAsString(moveResponseDTO), moveDTO.getGameId(),

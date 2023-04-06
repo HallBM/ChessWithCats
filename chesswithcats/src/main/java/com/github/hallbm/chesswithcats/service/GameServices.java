@@ -19,10 +19,12 @@ import com.github.hallbm.chesswithcats.domain.GameEnums.GameColor;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameWLD;
+import com.github.hallbm.chesswithcats.domain.GameEnums.PieceNotation;
 import com.github.hallbm.chesswithcats.domain.GameEnums.PieceType;
 import com.github.hallbm.chesswithcats.domain.MoveValidator;
 import com.github.hallbm.chesswithcats.dto.GameDTO;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
+import com.github.hallbm.chesswithcats.dto.MoveDTO;
 import com.github.hallbm.chesswithcats.dto.MoveResponseDTO;
 import com.github.hallbm.chesswithcats.model.Game;
 import com.github.hallbm.chesswithcats.model.GamePlay;
@@ -33,11 +35,11 @@ import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Services associated with CRUD for GameRequests long-term persisted Games.
  */
-
 @Service
 public class GameServices {
 
@@ -211,11 +213,11 @@ public class GameServices {
 
 		GameRequest gameReq = gameReqRepo.findById(requestId).get();
 		newGame.setStyle(gameReq.getStyle());
-		
+
 		if (newGame.getStyle() == GameStyle.AMBIGUOUS) {
 			newGame.getGamePlay().setMoveAttempts(0);
 		}
-		
+
 		double randNum = Math.random();
 
 		if (randNum < 0.5) {
@@ -362,15 +364,29 @@ public class GameServices {
 	 */
 	@Modifying
 	@Transactional
-	public void finalizeAndSaveGameState(Game game, MoveResponseDTO moveResponseDTO, String promotedPiece) {
+	public MoveResponseDTO updateGameState(Game game, MoveDTO moveDTO) {
 
 		GamePlay gamePlay = game.getGamePlay();
-		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), promotedPiece);
 		MoveValidator moveVal = game.getMoveValidator();
-
+		
+		MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
+		moveResponseDTO.setPieceMoves(moveVal.getPieceMoves());
+		
 		if (gamePlay.getHalfMoves() == 2) {
 			game.setOutcome(GameOutcome.INCOMPLETE);
 		}
+		
+		GameBoardServices.movePiece(gamePlay.getGameBoard(), moveResponseDTO.getPieceMoves(), moveDTO.getPromotionPiece());
+
+		// Evaluate check, checkmate, stalemate
+		GameOutcome outcome = moveVal.evaluateGameStatus();
+		moveResponseDTO.setGameOutcome(outcome);
+		
+		moveResponseDTO.setMoveNotation(moveVal.generateOfficialMove());
+		
+		
+
+		gamePlay.setIsInCheck(moveVal.getChessMoves().contains(ChessMove.CHECK));
 
 		boolean isCaptureMove = moveVal.getChessMoves().contains(ChessMove.CAPTURE);
 		boolean isPawnMove = moveResponseDTO.getMoveNotation().toLowerCase().startsWith("p");
@@ -391,7 +407,7 @@ public class GameServices {
 					gamePlay.removeCastling("k");
 				}
 			} else if (moveVal.getMovedPiece().getType() == PieceType.ROOK) {
-				switch (game.getMoveValidator().getStartPos()) {
+				switch (moveDTO.getStartPos()) {
 				case "A1" -> gamePlay.removeCastling("Q");
 				case "H1" -> gamePlay.removeCastling("K");
 				case "A8" -> gamePlay.removeCastling("q");
@@ -400,12 +416,84 @@ public class GameServices {
 			}
 		}
 
-		gamePlay.setEnPassantTargetSquare(moveVal.getNextEnPassantTargetSquare());
-		
-		gamePlay.addMove(moveResponseDTO.getMoveNotation()); 
+		gamePlay.setEnPassantTargetSquare(moveVal.getEnPassantSquare());
+
+		gamePlay.addMove(moveResponseDTO.getMoveNotation());
 		gamePlay.incrementHalfMoves();
 		gamePlay.updateFenSet();
+		
+		if (moveResponseDTO.getGameOutcome() == GameOutcome.CHECKMATE) {
+			game.setOutcome(moveResponseDTO.getGameOutcome());
+			game.setWinner(
+					gamePlay.getHalfMoves() % 2 == 0 ? game.getWhite().getUsername() : game.getBlack().getUsername());
+			game.setMoves(gamePlay.getMoves().toString());
+			game.setGamePlay(null);
+			gameRepo.save(game);
+			return moveResponseDTO;
+		}
+		
+		if (isInsufficientMaterialLeft(game)) {
+			moveResponseDTO.setGameOutcome(GameOutcome.INSUFFICIENT_MATERIAL);
+		}
 
+		if (gamePlay.getFiftyMoveClock() == 50) {
+			moveResponseDTO.setGameOutcome(GameOutcome.EXCESSIVE_MOVE_RULE);
+		}
+		
+		if (gamePlay.getFenRepetitionSet().containsValue(3)) {
+			moveResponseDTO.setGameOutcome(GameOutcome.REPETITION);
+		}
+		
+		if (moveResponseDTO.getGameOutcome() != null) {
+			game.setOutcome(moveResponseDTO.getGameOutcome());
+			game.setWinner("Draw");
+			game.setMoves(gamePlay.getMoves().toString());
+			game.setGamePlay(null);
+			gameRepo.save(game);
+			return moveResponseDTO;
+		}
+		
 		gameRepo.save(game);
+		return moveResponseDTO;
 	}
+
+	public boolean isInsufficientMaterialLeft(Game game) {
+		List<PieceNotation> piecesRemaining = new ArrayList<>(game.getGamePlay().getGameBoard().getPieceMap().values());
+		int numberOfPieces = piecesRemaining.size();
+
+		if (game.getStyle() == GameStyle.OBSTRUCTIVE) {
+			if (numberOfPieces == 6)
+				return true;
+			return false;
+		}
+
+		if (numberOfPieces > 4)
+			return false;
+
+		if (numberOfPieces == 2) {
+			return true;
+		}
+
+		piecesRemaining = piecesRemaining.stream()
+				.filter(piece -> piece.getType() == PieceType.BISHOP || piece.getType() == PieceType.KNIGHT)
+				.collect(Collectors.toList());
+
+		if (piecesRemaining.size() != numberOfPieces - 2) 
+			return false;
+		
+		if (piecesRemaining.size() == 1) 
+			return true;
+
+		PieceNotation piece1 = piecesRemaining.get(0);
+		PieceNotation piece2 = piecesRemaining.get(1);
+
+		if (piece1.getColor() != piece2.getColor())
+			return true;
+
+		if (piece1.getType() == PieceType.KNIGHT && piece2.getType() == PieceType.KNIGHT)
+			return true;
+
+		return false;
+	}
+
 }

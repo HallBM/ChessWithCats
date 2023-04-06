@@ -24,9 +24,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Short-term persistence of active game states, including 
- * 1) board state comprised of a 8x8 matrix of piece enums: PieceNotation[][]
- * 2) hashmap of current square mapping associated PieceNotation enum, e.g., "A5":"Q"
+ * Short-term persistence of active game states, including 1) board state
+ * comprised of a 8x8 matrix of piece enums: PieceNotation[][] 2) hashmap of
+ * current square mapping associated PieceNotation enum, e.g., "A5":"Q"
  */
 
 @Getter
@@ -34,17 +34,17 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Embeddable
-public class GameBoard{
-	
+public class GameBoard {
+
 	@Column(length = 1024)
 	@Size(max = 1024)
-	private PieceNotation [][] board = new PieceNotation[8][8];
-	
+	private PieceNotation[][] board = new PieceNotation[8][8];
+
 	@ElementCollection
-	@CollectionTable(name="piece_map")
-	@MapKeyColumn(name = "position", columnDefinition="CHAR(2)")
+	@CollectionTable(name = "piece_map")
+	@MapKeyColumn(name = "position", columnDefinition = "CHAR(2)")
 	@MapKeyClass(String.class)
-	@Column(name = "piece_type", columnDefinition="VARCHAR(2)")
+	@Column(name = "piece_type", columnDefinition = "VARCHAR(2)")
 	@Enumerated(EnumType.STRING)
 	@JoinColumn(name = "game_plays_id", referencedColumnName = "id")
 	@OnDelete(action = OnDeleteAction.CASCADE)
