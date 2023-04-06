@@ -185,8 +185,41 @@ async function drop(event) {
 		movedPiece.classList.remove("hide");
 		return false;
 	}
-
+	
 	let promotionPiece = null; // TODO check pawn promotion; get selection from user
+
+	if (isPlayerWhite && movedPiece.alt === "wp" && endSquarePosition.charAt(1) === "8") {
+		const promotionMenu = document.getElementById("promotion-popup");
+		promotionMenu.style.display = "block";
+
+		const selectionPromise = new Promise((resolve) => {
+			document.querySelectorAll(".promotion-button").forEach((button) => {
+				button.addEventListener("click", () => {
+					const selectedPiece = button.value;
+					resolve(selectedPiece);
+				});
+			});
+		});
+		promotionPiece = await selectionPromise;
+		promotionMenu.style.display = "none";
+	}
+
+	if (!isPlayerWhite && movedPiece.alt === "bp" && endSquarePosition.charAt(1) === "1") {
+		const promotionMenu = document.getElementById("promotion-popup");
+		promotionMenu.style.display = "block";
+
+		const selectionPromise = new Promise((resolve) => {
+			document.querySelectorAll(".promotion-button").forEach((button) => {
+				button.addEventListener("click", () => {
+					const selectedPiece = button.value.toLowerCase();
+					resolve(selectedPiece);
+				});
+			});
+		});
+
+		promotionPiece = await selectionPromise;
+		promotionMenu.style.display = "none";
+	}
 
 	const move = {
 		gameId: gameId,
@@ -217,13 +250,10 @@ async function drop(event) {
 			console.error(error);
 			return null;
 		});
-				
-	console.log(moveResponse);
 
 	movedPiece.classList.remove("hide");
 
 	if (moveResponse === null) {
-		console.log("null response");
 		return false;
 	}
 
@@ -255,21 +285,21 @@ function makeMove(moveResponse) {
 			}
 		}
 
-		if (tempMoveHighlightSquareId != null){
+		if (tempMoveHighlightSquareId != null) {
 			document.getElementById(tempMoveHighlightSquareId).classList.remove("highlight");
 		}
 		endSquare.classList.add("highlight");
 		tempMoveHighlightSquareId = endSquare.id;
-		
+
 		if (isWhiteTurn) {
 			if (whiteMoveHighlightSquareId != null) {
 				document.getElementById(whiteMoveHighlightSquareId).classList.remove("highlight");
-			} 
+			}
 			whiteMoveHighlightSquareId = endSquare.id;
 		} else {
 			if (blackMoveHighlightSquareId != null) {
 				document.getElementById(blackMoveHighlightSquareId).classList.remove("highlight");
-			} 
+			}
 			blackMoveHighlightSquareId = endSquare.id;
 		}
 	}
@@ -302,6 +332,11 @@ function makeMove(moveResponse) {
 	document.getElementById("rules").style.display = "none";
 	document.getElementById("history").style.display = "block";
 
+	if (moveResponse.moveNotation.substring(moveResponse.moveNotation.length - 5).includes("=")) {
+		let promoted = moveResponse.moveNotation.lastIndexOf("=") + 1;
+		updateImage(movedPiece, moveResponse.moveNotation.charAt(promoted));
+	}	
+		
 	if (moveResponse.gameOutcome == "CHECKMATE") {
 		document.getElementById("background").style.filter = "blur(5px)";
 		const popup = document.getElementById("checkmate-popup");
@@ -314,6 +349,15 @@ function makeMove(moveResponse) {
 			window.location.href = "/games";
 		}, 5000);
 	}
+}
+
+function updateImage(movedPiece, promotedPiece){
+	promotedPiece = promotedPiece == promotedPiece.toLowerCase() ?
+				("b" + promotedPiece) :
+				("w" + promotedPiece.toLowerCase());
+	let piecePath = getPieceImgPath();	
+	movedPiece.src = piecePath[0] + promotedPiece + piecePath[1];
+	movedPiece.alt = promotedPiece;
 }
 
 function hasSameColor(piece1, piece2) {
@@ -420,10 +464,10 @@ eventSource.onmessage = function(event) {
 };
 
 eventSource.addEventListener("move", function(event) {
-	
-	if (event.data === null){
+
+	if (event.data === null) {
 		return;
-	}	
+	}
 	const moveResponse = JSON.parse(event.data);
 	makeMove(moveResponse);
 
