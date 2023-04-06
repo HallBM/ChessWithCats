@@ -19,7 +19,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.hallbm.chesswithcats.domain.GameEnums.GameOutcome;
 import com.github.hallbm.chesswithcats.domain.GameEnums.GameStyle;
 import com.github.hallbm.chesswithcats.dto.GameRequestDTO;
 import com.github.hallbm.chesswithcats.dto.MoveDTO;
@@ -33,6 +32,7 @@ import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.FriendServices;
+import com.github.hallbm.chesswithcats.service.GameManager;
 import com.github.hallbm.chesswithcats.service.GameServices;
 
 /**
@@ -62,6 +62,9 @@ public class GameController {
 
 	@Autowired
 	private MoveUpdateSSEController moveUpdateSSEController;
+	
+	@Autowired
+	private GameManager gameManager;
 
 	/**
 	 * Generates and displays lists of games based on status of request (received
@@ -259,7 +262,7 @@ public class GameController {
 			@AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
 
 		Long gameId = Long.parseLong(moveDTO.getGameId());
-		Game game = gameRepo.findById(gameId).get();
+		Game game = gameManager.getGame(gameId);
 		GamePlay gamePlay = game.getGamePlay();
 		MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
 		

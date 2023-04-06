@@ -20,6 +20,7 @@ import com.github.hallbm.chesswithcats.dto.LoginCredentialsDTO;
 import com.github.hallbm.chesswithcats.dto.PlayerRegistrationDTO;
 import com.github.hallbm.chesswithcats.model.Player;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
+import com.github.hallbm.chesswithcats.service.GameManager;
 import com.github.hallbm.chesswithcats.service.PlayerServices;
 
 import jakarta.validation.Valid;
@@ -35,6 +36,9 @@ public class UserController {
 
 	@Autowired
 	private PlayerRepository playerRepo;
+	
+	@Autowired
+	private GameManager gameManager;
 
 	@GetMapping("/login")
 	public String loginPlayer(Model model, @AuthenticationPrincipal Player currentUser) {
@@ -50,6 +54,7 @@ public class UserController {
 	public String successfulLogin(@AuthenticationPrincipal Player currentUser) {
 		currentUser.setOnline(true);
 		currentUser.setLastLogin(LocalDateTime.now());
+		gameManager.addPlayer(currentUser.getUsername());
 		playerRepo.save(currentUser);
 		return "redirect:/";
 	}

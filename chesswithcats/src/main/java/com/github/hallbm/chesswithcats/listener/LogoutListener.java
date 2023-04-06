@@ -6,6 +6,7 @@ import org.springframework.security.authentication.event.LogoutSuccessEvent;
 import org.springframework.stereotype.Component;
 
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
+import com.github.hallbm.chesswithcats.service.GameManager;
 
 /**
  * Player logout event updates player 'isLogged' status to indicate to other players that
@@ -18,9 +19,12 @@ public class LogoutListener implements ApplicationListener<LogoutSuccessEvent> {
     @Autowired
     private PlayerRepository playerRepo;
     
+    @Autowired
+    private GameManager gameManager;
+    
     @Override
     public void onApplicationEvent(LogoutSuccessEvent event) {
     	playerRepo.logoutPlayerByUsername(event.getAuthentication().getName());
+    	gameManager.removePlayer(event.getAuthentication().getName());
     }
-    
 }
