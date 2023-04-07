@@ -25,7 +25,6 @@ public class GameManager {
 	@Autowired
 	private PlayerRepository playerRepo;
 	
-	
 	private final static Set<String> onlinePlayers = ConcurrentHashMap.newKeySet();
 	private final static ConcurrentHashMap<Long, Game> activeGames = new ConcurrentHashMap<>();
 	private final static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -39,7 +38,7 @@ public class GameManager {
 	}
 
 	public void start() {
-        scheduler.scheduleAtFixedRate(this::removeInactiveGames, 0, 1, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(this::removeInactiveGames, 0, 30, TimeUnit.MINUTES);
     }
 	
     public void stop() {
