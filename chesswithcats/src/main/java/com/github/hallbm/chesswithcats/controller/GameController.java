@@ -263,8 +263,14 @@ public class GameController {
 
 		Long gameId = Long.parseLong(moveDTO.getGameId());
 		Game game = gameManager.getGame(gameId);
-		GamePlay gamePlay = game.getGamePlay();
 		MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
+		
+		if (game == null) {
+			return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.NOT_FOUND);
+		}
+		
+		GamePlay gamePlay = game.getGamePlay();
+
 		
 		boolean isValidMove = game.getMoveValidator().validateMove(moveDTO, game.getGamePlay());
 		
