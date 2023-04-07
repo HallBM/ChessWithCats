@@ -238,7 +238,7 @@ public class GameServices {
 		GameBoardServices.setupGameBoard(newGame);
 		String openingFen = newGame.getGamePlay().updateFenSet();
 		newGame.setOpeningFen(openingFen);
-
+		newGame.setValidator();
 		gameRepo.save(newGame);
 		gameReqRepo.delete(gameReq);
 		gameManager.addGame(newGame);
