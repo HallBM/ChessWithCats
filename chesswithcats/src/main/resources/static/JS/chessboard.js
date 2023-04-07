@@ -206,7 +206,7 @@ async function drop(event) {
 
 	if (!isPlayerWhite && movedPiece.alt === "bp" && endSquarePosition.charAt(1) === "1") {
 		const promotionMenu = document.getElementById("promotion-popup");
-		promotionMenu.style.display = "block";
+		promotionMenu.style.display = "flex";
 
 		const selectionPromise = new Promise((resolve) => {
 			document.querySelectorAll(".promotion-button").forEach((button) => {
@@ -242,6 +242,8 @@ async function drop(event) {
 				return response.json();
 			} else if (response.status === 409) {
 				throw new Error("Invalid move. Try again.");
+			} else if (response.status === 404 || response.status === 500) {
+				window.location.href = "/games";
 			} else {
 				throw new Error("Unexpected error occured");
 			}

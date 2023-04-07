@@ -33,7 +33,7 @@
 				<div th:text="'Game #'+${id}"></div>
 			</div>
 			<div class="players"
-				style="display: flex; flex-direction: column; align-content: center">
+				>
 				<div id="turn" th:classappend="${turn}">
 					<div id="turn-color"></div>
 					<div id="turn-text"
@@ -41,7 +41,7 @@
 						White to Move</div>
 				</div>
 				<div class="container btn btn-light white-player no-cursor"
-					style="width: 90%">
+					style="width: 90%; color: black">
 					<strong><span style="font-size: 2vw;"
 						th:text="${whitePlayer}"></span></strong><i th:if="${whiteOnline}"
 						style="font-size: 2vw; color: green; margin-left: 2vw"
@@ -58,7 +58,7 @@
 			</div>
 
 			<div id="rules" class="rule-display"
-				style="overflow: auto; display: block; font-size: 2vw; background-color: lightblue">
+				style="overflow: auto; display: block; font-size: 1.5vw; background-color: lightblue">
 				<strong>&nbsp;&nbsp;Rules</strong>
 				<p id="rule-display"
 					style="font-size: 2.5vh; padding: 0vh 1vw; font-weight: bold;"></p>
@@ -92,24 +92,23 @@
 
 	</div>
 
-	<div id="checkmate-popup" class="popup"
-		style="display: none; justify-content: center; flex-direction: column; align-items: center;">
+	<div id="checkmate-popup" class="popup">
 		<img
 			src="/Images/large_img_catsplayingchess/felix-mittermeier-nAjil1z3eLk-unsplash.jpg"
-			style="width: 100%"> <span style="font-size: 3vw"><strong
+			style="width: 100%;"> <span style="font-size: 3vw"><strong
 			id="outcome">Text here</strong></span>
 
 	</div>
 
-	<div id="promotion-popup" class="popup"
-		style="display: none; justify-content: center; flex-direction: column; align-items: center;">
-		<span style="font-size: 3vw"><strong id="outcome">Piece
-				Selection</strong></span>
-		<div>
+	<div id="promotion-popup" class="popup" style="width: 20%; max-width: 400px; min-width: 200px;">
+		<div style="margin: 1vh 1vw">
+		<h4 class="text-center" style="margin-bottom: 1vh"><strong>Piece Selection</strong></h4>
+		<div class="row justify-content-center selection-menu">
 			<button type="submit" value="Q" class="btn btn-success promotion-button">Queen</button>
 			<button type="submit" value="R" class="btn btn-success promotion-button">Rook</button>
 			<button type="submit" value="B" class="btn btn-success promotion-button">Bishop</button>
 			<button type="submit" value="N" class="btn btn-success promotion-button">Knight</button>
+		</div>
 		</div>
 	</div>
 
