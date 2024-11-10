@@ -54,9 +54,6 @@ public class GameServices {
 	@Autowired
 	private FriendServices friendServ;
 	
-	@Autowired
-	private GameManager gameManager;
-	
 	/**
 	 * Returns GameRequestDTO created from pending gameRequests sent from @Param
 	 * username for front end display
@@ -187,7 +184,6 @@ public class GameServices {
 			activeGame.setMoves(activeGame.getGamePlay().getMoves().toString());
 			activeGame.setGamePlay(null);
 			gameRepo.save(activeGame);
-			gameManager.removeGame(activeGame.getId());
 		}
 	}
 
@@ -204,7 +200,6 @@ public class GameServices {
 		activeGame.setMoves(activeGame.getGamePlay().getMoves().toString());
 		activeGame.setGamePlay(null);
 		gameRepo.save(activeGame);
-		gameManager.removeGame(activeGame.getId());
 	}
 
 	/**
@@ -241,7 +236,6 @@ public class GameServices {
 		newGame.setValidator();
 		gameRepo.save(newGame);
 		gameReqRepo.delete(gameReq);
-		gameManager.addGame(newGame);
 		
 		return newGame;
 	}
@@ -432,7 +426,6 @@ public class GameServices {
 			game.setMoves(gamePlay.getMoves().toString());
 			game.setGamePlay(null);
 			gameRepo.save(game);
-			gameManager.removeGame(game.getId());
 			return moveResponseDTO;
 		}
 		
@@ -454,7 +447,6 @@ public class GameServices {
 			game.setMoves(gamePlay.getMoves().toString());
 			game.setGamePlay(null);
 			gameRepo.save(game);
-			gameManager.removeGame(game.getId());
 			return moveResponseDTO;
 		}
 		

@@ -32,7 +32,6 @@ import com.github.hallbm.chesswithcats.repository.GameRepository;
 import com.github.hallbm.chesswithcats.repository.GameRequestRepository;
 import com.github.hallbm.chesswithcats.repository.PlayerRepository;
 import com.github.hallbm.chesswithcats.service.FriendServices;
-import com.github.hallbm.chesswithcats.service.GameManager;
 import com.github.hallbm.chesswithcats.service.GameServices;
 
 /**
@@ -63,9 +62,6 @@ public class GameController {
 	@Autowired
 	private MoveUpdateSSEController moveUpdateSSEController;
 	
-	@Autowired
-	private GameManager gameManager;
-
 	/**
 	 * Generates and displays lists of games based on status of request (received
 	 * request, pending request, active games (accepted, unfinished) and completed
@@ -262,15 +258,14 @@ public class GameController {
 			@AuthenticationPrincipal Player currentUser) throws JsonProcessingException {
 
 		Long gameId = Long.parseLong(moveDTO.getGameId());
-		Game game = gameManager.getGame(gameId);
 		MoveResponseDTO moveResponseDTO = new MoveResponseDTO();
+		Game game = gameRepo.findById(gameId).get();
 		
 		if (game == null) {
 			return new ResponseEntity<MoveResponseDTO>(moveResponseDTO, HttpStatus.NOT_FOUND);
 		}
 		
 		GamePlay gamePlay = game.getGamePlay();
-
 		
 		boolean isValidMove = game.getMoveValidator().validateMove(moveDTO, game.getGamePlay());
 		
